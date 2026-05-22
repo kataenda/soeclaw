@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const REGISTRY_ADDRESS = "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d";
 const AGENT_CARD_BASE_URL =
-  "https://raw.githubusercontent.com/soesoe/mantlemind-ai/main/smart-contract/agent-cards/";
+  "https://raw.githubusercontent.com/soesoe/soeclaw/main/smart-contract/agent-cards/";
 
 // Only remaining agents (0=AlphaQuant, 1=WhaleWatcher already registered)
 const REMAINING = [

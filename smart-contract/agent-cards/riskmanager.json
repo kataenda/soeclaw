@@ -22,7 +22,7 @@
   "services": [
     {
       "name": "web",
-      "endpoint": "https://mantlemind-ai.vercel.app"
+      "endpoint": "https://soeclaw.vercel.app"
     }
   ],
   "x402Support": false,

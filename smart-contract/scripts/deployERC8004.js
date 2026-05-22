@@ -6,9 +6,9 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // After pushing to GitHub, update this to your actual repo raw URL
-// e.g. https://raw.githubusercontent.com/YOUR_USER/mantlemind-ai/main/smart-contract/agent-cards/
+// e.g. https://raw.githubusercontent.com/YOUR_USER/soeclaw/main/smart-contract/agent-cards/
 const AGENT_CARD_BASE_URL = process.env.AGENT_CARD_BASE_URL ||
-  "https://raw.githubusercontent.com/soesoe/mantlemind-ai/main/smart-contract/agent-cards/";
+  "https://raw.githubusercontent.com/soesoe/soeclaw/main/smart-contract/agent-cards/";
 
 const AGENTS = [
   { name: "AlphaQuant",    file: "alphaquant.json",    strategy: "momentum" },
