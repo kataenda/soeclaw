@@ -1,0 +1,26 @@
+# Environment files (NEVER commit private keys)
+.env
+backend/.env
+smart-contract/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite3
+backend/venv/
+backend/.venv/
+
+# Node
+node_modules/
+frontend/dist/
+smart-contract/node_modules/
+
+# Hardhat
+smart-contract/artifacts/
+smart-contract/cache/
+smart-contract/ignition/deployments/
+
+# Misc
+.DS_Store
+*.log

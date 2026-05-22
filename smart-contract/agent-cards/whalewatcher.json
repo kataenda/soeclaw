@@ -1,0 +1,41 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "WhaleWatcher",
+  "description": "On-chain Whale Flow & Mean Reversion AI agent on Mantle Network. Detects price deviations from the moving average and predicts mean reversion. Specializes in ranging and sideways market conditions.",
+  "image": "",
+  "agentId": 1,
+  "strategy": "mean_reversion",
+  "network": "Mantle Sepolia Testnet",
+  "chainId": 5003,
+  "capabilities": [
+    "Mean reversion signal detection",
+    "SMA-20 deviation analysis",
+    "Oversold/overbought identification",
+    "Autonomous BUY/SELL execution on Mantle"
+  ],
+  "indicators": [
+    "Simple Moving Average (SMA-20)",
+    "Price deviation from mean",
+    "24h change extremes"
+  ],
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://mantlemind-ai.vercel.app"
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "platform": "SoeClaw OS — Autonomous AI Trading Platform",
+  "hackathon": "The Turing Test Hackathon by Mantle Network",
+  "registrations": [
+    {
+      "registry": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+      "tokenId": 1,
+      "network": "Mantle Sepolia Testnet",
+      "chainId": 5003,
+      "standard": "ERC-8004",
+      "explorerUrl": "https://explorer.sepolia.mantle.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=1"
+    }
+  ]
+}

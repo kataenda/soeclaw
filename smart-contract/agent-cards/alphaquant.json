@@ -1,0 +1,41 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "AlphaQuant",
+  "description": "Momentum & Technical Analysis AI agent on Mantle Network. Generates autonomous trading signals based on price rate-of-change (ROC) and short-term momentum scoring. Every decision is recorded on-chain for verifiable benchmarking.",
+  "image": "",
+  "agentId": 0,
+  "strategy": "momentum",
+  "network": "Mantle Sepolia Testnet",
+  "chainId": 5003,
+  "capabilities": [
+    "Momentum signal generation",
+    "24h price change analysis",
+    "Autonomous BUY/SELL execution on Mantle",
+    "On-chain trade recording via ERC-8004"
+  ],
+  "indicators": [
+    "Price Rate of Change (ROC)",
+    "24h Price Change %",
+    "Short-term momentum score"
+  ],
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://mantlemind-ai.vercel.app"
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "platform": "SoeClaw OS — Autonomous AI Trading Platform",
+  "hackathon": "The Turing Test Hackathon by Mantle Network",
+  "registrations": [
+    {
+      "registry": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+      "tokenId": 0,
+      "network": "Mantle Sepolia Testnet",
+      "chainId": 5003,
+      "standard": "ERC-8004",
+      "explorerUrl": "https://explorer.sepolia.mantle.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=0"
+    }
+  ]
+}

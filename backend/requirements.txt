@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+websockets
+web3
+pytest
+python-dotenv
+httpx
+anthropic
+passlib[bcrypt]
+python-jose[cryptography]

@@ -1,0 +1,42 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "RiskManager",
+  "description": "Risk-Adjusted Returns & Volatility AI agent on Mantle Network. Measures market volatility via standard deviation and only executes trades within an optimal volatility range. Priority: capital preservation.",
+  "image": "",
+  "agentId": 4,
+  "strategy": "volatility_management",
+  "network": "Mantle Sepolia Testnet",
+  "chainId": 5003,
+  "capabilities": [
+    "Volatility regime detection (Low/Medium/High)",
+    "Standard deviation analysis",
+    "Risk-adjusted confidence scoring",
+    "Capital preservation logic",
+    "Autonomous BUY/SELL execution on Mantle"
+  ],
+  "indicators": [
+    "Price Standard Deviation",
+    "Volatility regime (Low/Medium/High)",
+    "Confidence scaling"
+  ],
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://mantlemind-ai.vercel.app"
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "platform": "SoeClaw OS — Autonomous AI Trading Platform",
+  "hackathon": "The Turing Test Hackathon by Mantle Network",
+  "registrations": [
+    {
+      "registry": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+      "tokenId": 4,
+      "network": "Mantle Sepolia Testnet",
+      "chainId": 5003,
+      "standard": "ERC-8004",
+      "explorerUrl": "https://explorer.sepolia.mantle.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=4"
+    }
+  ]
+}
