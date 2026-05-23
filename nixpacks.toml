@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["python310"]
+nixPkgs = ["python310", "nodejs_20"]
 
 [phases.install]
-cmds = ["pip install -r backend/requirements.txt"]
+cmds = [
+  "pip install -r backend/requirements.txt",
+  "npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli"
+]
 
 [start]
 cmd = "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"

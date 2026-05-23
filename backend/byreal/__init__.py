@@ -4,7 +4,7 @@ via subprocess calls. Returns structured JSON for AI agent consumption.
 """
 import asyncio
 import json
-import shutil
+import shlex
 from typing import Any
 
 _BYREAL_CMD  = "npx @byreal-io/byreal-cli"
@@ -36,7 +36,7 @@ async def get_pools(limit: int = 20) -> dict:
 
 
 async def search_pools(query: str) -> dict:
-    return await _run(f"{_BYREAL_CMD} pools search '{query}' -o json --non-interactive")
+    return await _run(f"{_BYREAL_CMD} pools search {shlex.quote(query)} -o json --non-interactive")
 
 
 async def get_tokens() -> dict:

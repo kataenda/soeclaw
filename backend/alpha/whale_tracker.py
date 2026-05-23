@@ -29,11 +29,12 @@ def _short(addr: str) -> str:
 async def whale_tracking_loop():
     w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={"timeout": 10}))
 
-    if not w3.is_connected():
+    connected = await asyncio.to_thread(w3.is_connected)
+    if not connected:
         print("[Whale] Cannot connect to Mantle RPC — whale tracking disabled")
         return
 
-    last_block = w3.eth.block_number
+    last_block = await asyncio.to_thread(lambda: w3.eth.block_number)
     print(f"[Whale] Tracker started at block {last_block} (threshold: {WHALE_THRESHOLD} MNT)")
 
     if WATCHLIST:
@@ -43,7 +44,7 @@ async def whale_tracking_loop():
         await asyncio.sleep(POLL_INTERVAL)
 
         try:
-            current_block = w3.eth.block_number
+            current_block = await asyncio.to_thread(lambda: w3.eth.block_number)
 
             if current_block <= last_block:
                 continue
@@ -52,7 +53,7 @@ async def whale_tracking_loop():
 
             for block_num in range(last_block + 1, scan_to + 1):
                 try:
-                    block = w3.eth.get_block(block_num, full_transactions=True)
+                    block = await asyncio.to_thread(w3.eth.get_block, block_num, True)
                 except Exception as e:
                     print(f"[Whale] Block {block_num} fetch error: {e}")
                     continue

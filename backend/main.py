@@ -513,12 +513,19 @@ def get_achievements(db: Session = Depends(database.get_db)):
 
 # ── Byreal SDK endpoints ─────────────────────────────────────────────────────
 
+def _byreal_wrap(raw: dict) -> dict:
+    """Normalize Byreal CLI response to always return {success, data}."""
+    if "success" in raw:
+        return raw  # already normalized
+    return {"success": True, "data": raw}
+
+
 @app.get("/api/byreal/overview")
 async def byreal_overview():
     """Byreal DEX global stats via @byreal-io/byreal-cli."""
     try:
         from byreal import get_dex_overview
-        return await get_dex_overview()
+        return _byreal_wrap(await get_dex_overview())
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -528,7 +535,7 @@ async def byreal_pools():
     """Top CLMM liquidity pools from Byreal DEX."""
     try:
         from byreal import get_pools
-        return await get_pools()
+        return _byreal_wrap(await get_pools())
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -538,7 +545,7 @@ async def byreal_pools_search(q: str = "SOL"):
     """Search Byreal CLMM pools by token symbol."""
     try:
         from byreal import search_pools
-        return await search_pools(q)
+        return _byreal_wrap(await search_pools(q))
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -548,7 +555,7 @@ async def byreal_tokens():
     """Token list with prices from Byreal."""
     try:
         from byreal import get_tokens
-        return await get_tokens()
+        return _byreal_wrap(await get_tokens())
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -558,7 +565,7 @@ async def byreal_perps_signals():
     """AI-generated perpetuals trading signals from Byreal Perps CLI."""
     try:
         from byreal import get_perps_signals
-        return await get_perps_signals()
+        return _byreal_wrap(await get_perps_signals())
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -568,7 +575,7 @@ async def byreal_swap_preview(from_token: str = "SOL", to_token: str = "USDC", a
     """Preview a token swap on Byreal CLMM DEX."""
     try:
         from byreal import get_swap_preview
-        return await get_swap_preview(from_token, to_token, amount)
+        return _byreal_wrap(await get_swap_preview(from_token, to_token, amount))
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -867,6 +874,7 @@ async def agents_onchain():
 # ── Background agent loop ────────────────────────────────────────────────────
 
 _agent_idx = 0
+AGENT_INTERVAL = int(os.getenv("AGENT_INTERVAL", "60"))  # seconds between ticks
 
 
 async def agent_loop():
@@ -877,13 +885,13 @@ async def agent_loop():
     await manager.broadcast({"type": "PRICE_UPDATE", "data": price_cache})
 
     while True:
-        await asyncio.sleep(60)  # 1 menit — hemat gas testnet
+        await asyncio.sleep(AGENT_INTERVAL)
 
         if not agent_running:
             continue  # skip tick tapi tetap loop (harga masih update)
 
         try:
-            # Refresh prices (fetch_prices caches internally for 30s)
+            # Refresh prices (fetch_prices caches internally for 15s)
             await fetch_prices()
             # Always append current cached prices to history (even if fetch failed)
             for sym in price_history:
@@ -892,9 +900,10 @@ async def agent_loop():
                     price_history[sym] = (price_history[sym] + [p])[-50:]
             await manager.broadcast({"type": "PRICE_UPDATE", "data": price_cache})
 
-            # Pick rotating agent and a random symbol
-            agent_cfg = AGENT_CONFIGS[_agent_idx % len(AGENT_CONFIGS)]
+            # Pick rotating agent — capture index BEFORE incrementing
+            current_idx = _agent_idx % len(AGENT_CONFIGS)
             _agent_idx += 1
+            agent_cfg = AGENT_CONFIGS[current_idx]
             symbol = random.choice(list(price_cache.keys()))
             price_info = price_cache[symbol]
             price = price_info["price"]
@@ -930,9 +939,12 @@ async def agent_loop():
                 db.add(thought)
 
                 if action != "HOLD":
-                    tx_hash = mantle_client.log_trade_on_chain(agent_cfg["name"], symbol, action, confidence)
+                    # Run blocking web3 tx in thread pool — avoids freezing the event loop
+                    tx_hash = await asyncio.to_thread(
+                        mantle_client.log_trade_on_chain, agent_cfg["name"], symbol, action, confidence
+                    )
                     trade = models.Trade(
-                        agent_id=(_agent_idx % len(AGENT_CONFIGS)) + 1,
+                        agent_id=current_idx + 1,  # DB IDs are 1-indexed, match AGENT_CONFIGS order
                         symbol=symbol,
                         action=action,
                         confidence=confidence,

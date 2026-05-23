@@ -369,14 +369,21 @@ function ByrealTab() {
   const [overview, setOverview] = useState<ByrealOverview | null>(null);
   const [signals, setSignals] = useState<PerpSignal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<'dex' | 'perps'>('dex');
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     Promise.all([
-      fetch(`${API}/api/byreal/overview`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/api/byreal/perps/signals`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/byreal/overview`).then(r => r.json()).catch(() => ({ success: false, error: 'Network error' })),
+      fetch(`${API}/api/byreal/perps/signals`).then(r => r.json()).catch(() => ({ success: false, error: 'Network error' })),
     ]).then(([ov, sg]) => {
-      if (ov?.success) setOverview(ov.data);
+      if (ov?.success && ov.data) {
+        setOverview(ov.data);
+      } else if (!ov?.success) {
+        setError(ov?.error ?? 'Byreal CLI unavailable');
+      }
       if (sg?.success) {
         const all = [
           ...(sg.data?.signals?.conservative ?? []),
@@ -386,7 +393,9 @@ function ByrealTab() {
       }
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const fmt = (n: number) => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(2)}M` : `$${(n/1_000).toFixed(1)}K`;
 
@@ -400,12 +409,20 @@ function ByrealTab() {
             {t === 'dex' ? '🔄 CLMM DEX' : '📈 Perps Signals'}
           </button>
         ))}
-        <span className="mono-text text-muted" style={{ fontSize: '0.6rem', marginLeft: 'auto', alignSelf: 'center' }}>via Byreal SDK</span>
+        <button className="neon-btn" onClick={load} aria-label="Refresh Byreal data" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', marginLeft: 'auto' }}>↻</button>
       </div>
 
       {loading && <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>Fetching Byreal data...</p>}
 
-      {!loading && subTab === 'dex' && overview && (
+      {!loading && error && (
+        <div style={{ padding: '0.5rem 0.65rem', background: 'rgba(255,51,102,0.06)', border: '1px solid rgba(255,51,102,0.25)', borderRadius: '6px' }}>
+          <div className="mono-text" style={{ fontSize: '0.72rem', color: '#ff3366', marginBottom: '0.2rem' }}>⚠ Byreal SDK unavailable</div>
+          <div className="mono-text text-muted" style={{ fontSize: '0.62rem' }}>{error}</div>
+          <div className="mono-text text-muted" style={{ fontSize: '0.6rem', marginTop: '0.2rem' }}>Node.js required — will work in Railway production</div>
+        </div>
+      )}
+
+      {!loading && !error && subTab === 'dex' && overview && (
         <div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
             {[
@@ -421,7 +438,7 @@ function ByrealTab() {
             ))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.65rem', background: 'rgba(247,147,26,0.06)', border: '1px solid rgba(247,147,26,0.2)', borderRadius: '6px' }}>
-            <span style={{ fontSize: '0.9rem' }}>⛓</span>
+            <span aria-hidden="true" style={{ fontSize: '0.9rem' }}>⛓</span>
             <div>
               <div className="mono-text" style={{ fontSize: '0.7rem', color: '#f7931a', fontWeight: 700 }}>Byreal CLMM — Solana</div>
               <div className="mono-text text-muted" style={{ fontSize: '0.62rem' }}>Live data via @byreal-io/byreal-cli · Agent Skills integrated</div>
@@ -430,9 +447,13 @@ function ByrealTab() {
         </div>
       )}
 
-      {!loading && subTab === 'perps' && (
+      {!loading && !error && subTab === 'dex' && !overview && (
+        <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>No DEX data received.</p>
+      )}
+
+      {!loading && !error && subTab === 'perps' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '160px', overflowY: 'auto' }}>
-          {signals.length === 0 && <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>No signals available.</p>}
+          {signals.length === 0 && <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>No perp signals available.</p>}
           {signals.map((s, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', borderRadius: '5px', background: 'rgba(255,255,255,0.03)', borderLeft: `3px solid ${s.direction === 'Long' ? '#00e87a' : '#ff3366'}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
