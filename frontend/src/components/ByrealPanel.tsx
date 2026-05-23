@@ -39,7 +39,7 @@ export default function ByrealPanel() {
   useEffect(() => { load(); const t = setInterval(load, 60_000); return () => clearInterval(t); }, []);
 
   return (
-    <div className="panel mono-text byreal-side-panel" style={{ flex: '0 0 210px', display: 'flex', flexDirection: 'column', gap: '0.5rem', minHeight: 0, overflow: 'hidden' }}>
+    <div className="panel mono-text byreal-side-panel" style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: '0.5rem', minHeight: 0, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-neon)', paddingBottom: '0.4rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
