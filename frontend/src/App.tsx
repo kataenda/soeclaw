@@ -207,15 +207,20 @@ function App() {
 
         {/* Center Main Content */}
         <div className={`main-content${mobileTab === 'market' ? ' tab-active' : ''}`} role="main" aria-label="Market charts and positions">
-          <MarketChart prices={prices} bybitConnected={bybitConnected} />
-          <ActivePositions trades={trades} prices={prices} newTxHash={newTxHash} />
+          {/* Charts column */}
+          <div style={{ display: 'flex', flex: 1, flexDirection: 'row', gap: '0.85rem', minHeight: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: '0.85rem', minWidth: 0, overflow: 'hidden' }}>
+              <MarketChart prices={prices} bybitConnected={bybitConnected} />
+              <ActivePositions trades={trades} prices={prices} newTxHash={newTxHash} />
+            </div>
+            <ByrealPanel />
+          </div>
         </div>
 
         {/* Right Sidebar */}
-        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI thought stream, strategy, and Byreal">
+        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI thought stream and strategy">
           <TerminalConsole thoughts={thoughts} />
           <StrategyPanel />
-          <ByrealPanel />
         </div>
 
         {/* Bottom Panel — All 6 Hackathon Tracks */}

@@ -15,7 +15,7 @@ const TerminalConsole: React.FC<Props> = ({ thoughts }) => {
   const { t } = useTranslation();
 
   return (
-    <div className="panel mono-text" style={{ flex: '0 0 44%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div className="panel mono-text" style={{ flex: '0 0 55%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <h3 className="text-cyan" style={{ fontSize: '0.85rem', borderBottom: '1px solid var(--border-neon)', paddingBottom: '0.4rem', marginBottom: '0.75rem' }}>
         {t('terminal_title')}
       </h3>

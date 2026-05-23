@@ -68,7 +68,7 @@ const StrategyPanel: React.FC = () => {
   const current = STRATEGIES.find(s => s.agent === active)!;
 
   return (
-    <div className="panel mono-text" style={{ flex: '0 0 34%', display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0, overflow: 'hidden' }}>
+    <div className="panel mono-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0, overflow: 'hidden' }}>
       <h3 className="text-cyan" style={{ fontSize: '0.85rem', borderBottom: '1px solid var(--border-neon)', paddingBottom: '0.4rem' }}>
         {t('strategy_title')}
       </h3>

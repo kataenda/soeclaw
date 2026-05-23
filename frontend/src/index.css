@@ -283,6 +283,7 @@ body {
   }
   .bottom-panel { grid-row: 4; }
   .panel { padding: 1rem; }
+  .byreal-side-panel { display: none; }
 }
 
 @media (max-width: 640px) {
