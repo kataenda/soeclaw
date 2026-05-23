@@ -48,7 +48,7 @@ export default function ByrealPanel() {
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-neon)', paddingBottom: '0.4rem', marginBottom: '0.5rem', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f7931a', textShadow: '0 0 10px rgba(247,147,26,0.5)' }}>// BYREAL LIVE</span>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f7931a', textShadow: '0 0 10px rgba(247,147,26,0.5)' }}>// BYREAL LIVE</span>
           <span style={{ fontSize: '0.56rem', padding: '1px 5px', borderRadius: '3px', background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.3)', color: '#f7931a' }}>SDK</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
