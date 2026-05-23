@@ -361,10 +361,102 @@ function EconomyTab() {
   );
 }
 
+/* ─────────────────────────────── Byreal Tab ─────────────────────────── */
+interface ByrealOverview { tvl: number; volume_24h_usd: number; fee_24h_usd: number; pools_count: number }
+interface PerpSignal { coin: string; direction: string; price: string; rsi: number; score: number; category: string }
+
+function ByrealTab() {
+  const [overview, setOverview] = useState<ByrealOverview | null>(null);
+  const [signals, setSignals] = useState<PerpSignal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [subTab, setSubTab] = useState<'dex' | 'perps'>('dex');
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/api/byreal/overview`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/byreal/perps/signals`).then(r => r.json()).catch(() => null),
+    ]).then(([ov, sg]) => {
+      if (ov?.success) setOverview(ov.data);
+      if (sg?.success) {
+        const all = [
+          ...(sg.data?.signals?.conservative ?? []),
+          ...(sg.data?.signals?.aggressive ?? []),
+        ].slice(0, 8);
+        setSignals(all);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const fmt = (n: number) => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(2)}M` : `$${(n/1_000).toFixed(1)}K`;
+
+  return (
+    <div className="fade-in">
+      {/* Sub-tabs */}
+      <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.65rem' }}>
+        {(['dex', 'perps'] as const).map(t => (
+          <button key={t} onClick={() => setSubTab(t)} className="neon-btn"
+            style={{ fontSize: '0.68rem', padding: '0.25rem 0.6rem', background: subTab === t ? 'rgba(247,147,26,0.14)' : 'transparent', borderColor: subTab === t ? '#f7931a' : 'rgba(255,255,255,0.1)', color: subTab === t ? '#f7931a' : '#6b7fa3' }}>
+            {t === 'dex' ? '🔄 CLMM DEX' : '📈 Perps Signals'}
+          </button>
+        ))}
+        <span className="mono-text text-muted" style={{ fontSize: '0.6rem', marginLeft: 'auto', alignSelf: 'center' }}>via Byreal SDK</span>
+      </div>
+
+      {loading && <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>Fetching Byreal data...</p>}
+
+      {!loading && subTab === 'dex' && overview && (
+        <div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+            {[
+              { label: 'TVL', value: fmt(overview.tvl), color: '#00e87a' },
+              { label: 'Vol 24h', value: fmt(overview.volume_24h_usd), color: '#00d4ff' },
+              { label: 'Fees 24h', value: fmt(overview.fee_24h_usd), color: '#f59e0b' },
+              { label: 'Pools', value: String(overview.pools_count), color: '#a78bfa' },
+            ].map(s => (
+              <div key={s.label} className="stat-chip">
+                <span className="stat-chip-label">{s.label}</span>
+                <span className="stat-chip-value" style={{ color: s.color }}>{s.value}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.65rem', background: 'rgba(247,147,26,0.06)', border: '1px solid rgba(247,147,26,0.2)', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.9rem' }}>⛓</span>
+            <div>
+              <div className="mono-text" style={{ fontSize: '0.7rem', color: '#f7931a', fontWeight: 700 }}>Byreal CLMM — Solana</div>
+              <div className="mono-text text-muted" style={{ fontSize: '0.62rem' }}>Live data via @byreal-io/byreal-cli · Agent Skills integrated</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && subTab === 'perps' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '160px', overflowY: 'auto' }}>
+          {signals.length === 0 && <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>No signals available.</p>}
+          {signals.map((s, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', borderRadius: '5px', background: 'rgba(255,255,255,0.03)', borderLeft: `3px solid ${s.direction === 'Long' ? '#00e87a' : '#ff3366'}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="mono-text" style={{ fontSize: '0.7rem', color: s.direction === 'Long' ? '#00e87a' : '#ff3366', fontWeight: 700 }}>{s.direction === 'Long' ? '▲' : '▼'}</span>
+                <span className="mono-text" style={{ fontSize: '0.72rem', color: '#00d4ff' }}>{s.coin.replace('xyz:', '')}</span>
+                <span className="mono-text text-muted" style={{ fontSize: '0.65rem' }}>${s.price}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="mono-text text-muted" style={{ fontSize: '0.62rem' }}>RSI {s.rsi}</span>
+                <span className="mono-text" style={{ fontSize: '0.68rem', color: s.score >= 60 ? '#00e87a' : '#f59e0b', fontWeight: 700 }}>score {s.score}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─────────────────────────────── BottomPanel ─────────────────────────── */
 const TABS = [
   { id: 'alpha',    icon: '📡', label: 'Alpha Feed'  },
   { id: 'rwa',      icon: '💵', label: 'RWA Yields'  },
+  { id: 'byreal',   icon: '⚡', label: 'Byreal'      },
   { id: 'devtools', icon: '⚙️', label: 'DevTools'    },
   { id: 'economy',  icon: '🏆', label: 'Economy'     },
 ] as const;
@@ -393,6 +485,7 @@ export default function BottomPanel() {
       <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         {tab === 'alpha'    && <AlphaTab />}
         {tab === 'rwa'      && <RWATab />}
+        {tab === 'byreal'   && <ByrealTab />}
         {tab === 'devtools' && <DevToolsTab />}
         {tab === 'economy'  && <EconomyTab />}
       </div>

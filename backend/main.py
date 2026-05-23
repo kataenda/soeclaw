@@ -511,6 +511,68 @@ def get_achievements(db: Session = Depends(database.get_db)):
     return result
 
 
+# ── Byreal SDK endpoints ─────────────────────────────────────────────────────
+
+@app.get("/api/byreal/overview")
+async def byreal_overview():
+    """Byreal DEX global stats via @byreal-io/byreal-cli."""
+    try:
+        from byreal import get_dex_overview
+        return await get_dex_overview()
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/pools")
+async def byreal_pools():
+    """Top CLMM liquidity pools from Byreal DEX."""
+    try:
+        from byreal import get_pools
+        return await get_pools()
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/pools/search")
+async def byreal_pools_search(q: str = "SOL"):
+    """Search Byreal CLMM pools by token symbol."""
+    try:
+        from byreal import search_pools
+        return await search_pools(q)
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/tokens")
+async def byreal_tokens():
+    """Token list with prices from Byreal."""
+    try:
+        from byreal import get_tokens
+        return await get_tokens()
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/perps/signals")
+async def byreal_perps_signals():
+    """AI-generated perpetuals trading signals from Byreal Perps CLI."""
+    try:
+        from byreal import get_perps_signals
+        return await get_perps_signals()
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/swap/preview")
+async def byreal_swap_preview(from_token: str = "SOL", to_token: str = "USDC", amount: float = 1.0):
+    """Preview a token swap on Byreal CLMM DEX."""
+    try:
+        from byreal import get_swap_preview
+        return await get_swap_preview(from_token, to_token, amount)
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # ── Auth schemas ────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
