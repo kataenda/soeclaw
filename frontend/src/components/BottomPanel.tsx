@@ -477,7 +477,6 @@ function ByrealTab() {
 const TABS = [
   { id: 'alpha',    icon: '📡', label: 'Alpha Feed'  },
   { id: 'rwa',      icon: '💵', label: 'RWA Yields'  },
-  { id: 'byreal',   icon: '⚡', label: 'Byreal'      },
   { id: 'devtools', icon: '⚙️', label: 'DevTools'    },
   { id: 'economy',  icon: '🏆', label: 'Economy'     },
 ] as const;
@@ -507,7 +506,6 @@ export default function BottomPanel() {
       <div role="tabpanel" id={`tabpanel-${tab}`} aria-label={TABS.find(t => t.id === tab)?.label} style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         {tab === 'alpha'    && <AlphaTab />}
         {tab === 'rwa'      && <RWATab />}
-        {tab === 'byreal'   && <ByrealTab />}
         {tab === 'devtools' && <DevToolsTab />}
         {tab === 'economy'  && <EconomyTab />}
       </div>
