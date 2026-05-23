@@ -9,6 +9,7 @@ import LoginPage from './components/LoginPage';
 import StrategyPanel from './components/StrategyPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import BottomPanel from './components/BottomPanel';
+import ByrealPanel from './components/ByrealPanel';
 import { useTranslation } from './i18n/TranslationContext';
 import { WS_URL } from './config';
 
@@ -211,9 +212,10 @@ function App() {
         </div>
 
         {/* Right Sidebar */}
-        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI thought stream and strategy">
+        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI thought stream, strategy, and Byreal">
           <TerminalConsole thoughts={thoughts} />
           <StrategyPanel />
+          <ByrealPanel />
         </div>
 
         {/* Bottom Panel — All 6 Hackathon Tracks */}
