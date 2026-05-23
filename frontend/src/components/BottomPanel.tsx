@@ -471,18 +471,19 @@ export default function BottomPanel() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
         <h3 className="mono-text text-cyan" style={{ fontSize: '0.78rem', marginRight: '0.25rem' }}>// SOECLAW INSIGHTS</h3>
-        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+        <div role="tablist" aria-label="Insights sections" style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="neon-btn"
+            <button key={t.id} role="tab" aria-selected={tab === t.id} aria-controls={`tabpanel-${t.id}`}
+              onClick={() => setTab(t.id)} className="neon-btn"
               style={{ fontSize: '0.7rem', padding: '0.3rem 0.65rem', background: tab === t.id ? 'rgba(0,212,255,0.14)' : 'transparent', borderColor: tab === t.id ? '#00d4ff' : 'rgba(255,255,255,0.1)', color: tab === t.id ? '#00d4ff' : '#6b7fa3' }}>
-              <span style={{ marginRight: '0.25rem' }}>{t.icon}</span>{t.label}
+              <span aria-hidden="true" style={{ marginRight: '0.25rem' }}>{t.icon}</span>{t.label}
             </button>
           ))}
         </div>
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+      <div role="tabpanel" id={`tabpanel-${tab}`} aria-label={TABS.find(t => t.id === tab)?.label} style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         {tab === 'alpha'    && <AlphaTab />}
         {tab === 'rwa'      && <RWATab />}
         {tab === 'byreal'   && <ByrealTab />}

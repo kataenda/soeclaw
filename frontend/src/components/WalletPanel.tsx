@@ -87,10 +87,11 @@ const WalletPanel: React.FC = () => {
       {/* Buttons */}
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <a href="https://faucet.sepolia.mantle.xyz" target="_blank" rel="noopener noreferrer" className="neon-btn"
+          aria-label="Open Mantle Sepolia faucet (opens in new tab)"
           style={{ flex: 1, fontSize: '0.7rem', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {t('wallet_faucet')}
         </a>
-        <button className="neon-btn" style={{ flex: 1, fontSize: '0.7rem' }} onClick={fetchWallet}>
+        <button className="neon-btn" aria-label="Refresh wallet balance" style={{ flex: 1, fontSize: '0.7rem' }} onClick={fetchWallet}>
           {t('wallet_refresh')}
         </button>
       </div>

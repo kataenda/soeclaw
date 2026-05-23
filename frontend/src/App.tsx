@@ -173,8 +173,8 @@ function App() {
 
             {/* WS status */}
             {!wsConnected && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.3)', borderRadius: '20px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff9900', animation: 'pulse 1s infinite' }} />
+              <div role="status" aria-live="polite" aria-label="WebSocket reconnecting" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.3)', borderRadius: '20px' }}>
+                <div aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff9900', animation: 'pulse 1s infinite' }} />
                 <span className="mono-text" style={{ fontSize: '0.68rem', color: '#ff9900' }}>WS RECONNECTING</span>
               </div>
             )}
@@ -186,6 +186,7 @@ function App() {
                 {agentRunning ? t('agent_running') : t('agent_stopped')}
               </span>
               <button onClick={toggleAgent} className="neon-btn"
+                aria-label={agentRunning ? 'Stop AI agents' : 'Start AI agents'}
                 style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderColor: agentRunning ? 'rgba(255,51,102,0.5)' : 'rgba(0,232,122,0.5)', color: agentRunning ? 'var(--pink)' : 'var(--green)', background: 'transparent' }}>
                 {agentRunning ? t('btn_stop') : t('btn_start')}
               </button>
@@ -193,24 +194,24 @@ function App() {
 
             <LanguageSwitcher />
             <span className="mono-text text-muted" style={{ fontSize: '0.72rem' }}>// {username}</span>
-            <button className="neon-btn" onClick={handleLogout} style={{ fontSize: '0.7rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
+            <button className="neon-btn" onClick={handleLogout} aria-label="Log out" style={{ fontSize: '0.7rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
           </div>
         </div>
 
         {/* Left Sidebar */}
-        <div className={`sidebar-left${mobileTab === 'agents' ? ' tab-active' : ''}`}>
+        <div className={`sidebar-left${mobileTab === 'agents' ? ' tab-active' : ''}`} role="complementary" aria-label="Agent wallet and leaderboard">
           <WalletPanel />
           <Leaderboard />
         </div>
 
         {/* Center Main Content */}
-        <div className={`main-content${mobileTab === 'market' ? ' tab-active' : ''}`}>
+        <div className={`main-content${mobileTab === 'market' ? ' tab-active' : ''}`} role="main" aria-label="Market charts and positions">
           <MarketChart prices={prices} bybitConnected={bybitConnected} />
           <ActivePositions trades={trades} prices={prices} newTxHash={newTxHash} />
         </div>
 
         {/* Right Sidebar */}
-        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`}>
+        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI thought stream and strategy">
           <TerminalConsole thoughts={thoughts} />
           <StrategyPanel />
         </div>
@@ -219,15 +220,18 @@ function App() {
         <BottomPanel />
 
         {/* Mobile Bottom Navigation */}
-        <nav className="mobile-nav">
-          <button className={mobileTab === 'market' ? 'active' : ''} onClick={() => setMobileTab('market')}>
-            <span className="nav-icon">📈</span>{t('nav_market')}
+        <nav className="mobile-nav" aria-label="Mobile navigation">
+          <button className={mobileTab === 'market' ? 'active' : ''} onClick={() => setMobileTab('market')}
+            aria-label={t('nav_market')} aria-pressed={mobileTab === 'market'}>
+            <span className="nav-icon" aria-hidden="true">📈</span>{t('nav_market')}
           </button>
-          <button className={mobileTab === 'agents' ? 'active' : ''} onClick={() => setMobileTab('agents')}>
-            <span className="nav-icon">🤖</span>{t('nav_agents')}
+          <button className={mobileTab === 'agents' ? 'active' : ''} onClick={() => setMobileTab('agents')}
+            aria-label={t('nav_agents')} aria-pressed={mobileTab === 'agents'}>
+            <span className="nav-icon" aria-hidden="true">🤖</span>{t('nav_agents')}
           </button>
-          <button className={mobileTab === 'terminal' ? 'active' : ''} onClick={() => setMobileTab('terminal')}>
-            <span className="nav-icon">💻</span>{t('nav_terminal')}
+          <button className={mobileTab === 'terminal' ? 'active' : ''} onClick={() => setMobileTab('terminal')}
+            aria-label={t('nav_terminal')} aria-pressed={mobileTab === 'terminal'}>
+            <span className="nav-icon" aria-hidden="true">💻</span>{t('nav_terminal')}
           </button>
         </nav>
 

@@ -83,7 +83,7 @@ const Leaderboard: React.FC = () => {
         <div className="text-muted" style={{ fontSize: '0.8rem' }}>Loading...</div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: '360px', paddingRight: '2px' }}>
+      <div role="list" aria-label="Agent leaderboard" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: '360px', paddingRight: '2px' }}>
         {agents.map((agent, i) => {
           const oc = onchain[agent.name];
           const tokenId = TOKEN_IDS[agent.name];
@@ -93,7 +93,7 @@ const Leaderboard: React.FC = () => {
           const rankColors = ['#f59e0b', '#94a3b8', '#cd7f32'];
 
           return (
-            <div key={agent.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div key={agent.id} role="listitem" aria-label={`${agent.name}, rank ${i + 1}, ROI ${agent.roi}%`} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
                   <span className="mono-text" style={{ fontSize: '0.68rem', fontWeight: 700, color: rankColors[i] ?? 'var(--text-muted)' }}>#{i + 1}</span>
