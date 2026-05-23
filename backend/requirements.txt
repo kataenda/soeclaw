@@ -9,3 +9,5 @@ httpx
 anthropic
 passlib[bcrypt]
 python-jose[cryptography]
+# AI Alpha & Data
+python-telegram-bot>=20.0

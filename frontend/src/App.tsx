@@ -8,6 +8,7 @@ import WalletPanel from './components/WalletPanel';
 import LoginPage from './components/LoginPage';
 import StrategyPanel from './components/StrategyPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
+import BottomPanel from './components/BottomPanel';
 import { useTranslation } from './i18n/TranslationContext';
 import { WS_URL } from './config';
 
@@ -42,6 +43,7 @@ function App() {
   const [trades, setTrades]       = useState<Trade[]>([]);
   const [agentRunning, setAgentRunning]     = useState<boolean>(true);
   const [bybitConnected, setBybitConnected] = useState<boolean>(false);
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [mobileTab, setMobileTab]           = useState<'market' | 'agents' | 'terminal'>('market');
   const [newTxHash, setNewTxHash]           = useState<string | null>(null);
   const [prices, setPrices]       = useState<Prices>({
@@ -73,7 +75,7 @@ function App() {
       if (destroyed) return;
       ws = new WebSocket(`${WS_URL}/ws`);
 
-      ws.onopen = () => console.log('[WS] Connected');
+      ws.onopen = () => { console.log('[WS] Connected'); setWsConnected(true); };
 
       ws.onmessage = (event) => {
         try {
@@ -84,7 +86,6 @@ function App() {
             setTrades(prev => [msg.data, ...prev].slice(0, 20));
             setNewTxHash(msg.data.tx_hash);
             setTimeout(() => setNewTxHash(null), 1600);
-            // Inject ERC-8004 on-chain confirmation into terminal
             if (msg.data.erc8004 && msg.data.tx_hash) {
               const chainThought: Thought = {
                 agent_name: 'MANTLE',
@@ -106,9 +107,10 @@ function App() {
         }
       };
 
-      ws.onerror = () => {};
+      ws.onerror = () => { setWsConnected(false); };
 
       ws.onclose = () => {
+        setWsConnected(false);
         if (!destroyed) {
           retryTimer = setTimeout(connect, 3000);
         }
@@ -147,42 +149,51 @@ function App() {
       <div className="dashboard-grid">
 
         {/* Top Header */}
-        <div className="panel topbar">
-          <div>
-            <h1 className="text-cyan mono-text" style={{ fontSize: '1.5rem' }}>
-              SOECLAW OS <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>v1.0.0</span>
-            </h1>
-            <p className="text-muted mono-text" style={{ fontSize: '0.8rem', marginTop: '4px' }}>
-              {t('sys_subtitle')}
-            </p>
+        <div className="panel topbar" style={{ padding: '0.85rem 1.25rem' }}>
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,232,122,0.1))', border: '1px solid rgba(0,212,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+              🤖
+            </div>
+            <div>
+              <h1 className="mono-text text-cyan" style={{ fontSize: '1.15rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
+                SOECLAW OS <span className="mono-text text-muted" style={{ fontSize: '0.68rem', fontWeight: 400 }}>v2.0</span>
+              </h1>
+              <p className="mono-text text-muted" style={{ fontSize: '0.68rem', marginTop: '2px' }}>{t('sys_subtitle')}</p>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-green)', boxShadow: '0 0 8px var(--accent-green-glow)' }}></div>
-              <span className="mono-text" style={{ fontSize: '0.8rem', color: 'var(--accent-green)' }}>{t('sys_online')}</span>
+
+          {/* Status + controls */}
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* System online */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'rgba(0,232,122,0.08)', border: '1px solid rgba(0,232,122,0.2)', borderRadius: '20px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green-glow)' }} />
+              <span className="mono-text" style={{ fontSize: '0.68rem', color: 'var(--green)' }}>{t('sys_online')}</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{
-                width: '8px', height: '8px', borderRadius: '50%',
-                backgroundColor: agentRunning ? 'var(--accent-green)' : '#ff3366',
-                boxShadow: agentRunning ? '0 0 8px var(--accent-green-glow)' : '0 0 8px #ff3366',
-              }} />
-              <span className="mono-text" style={{ fontSize: '0.8rem', color: agentRunning ? 'var(--accent-green)' : '#ff3366' }}>
+            {/* WS status */}
+            {!wsConnected && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.3)', borderRadius: '20px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff9900', animation: 'pulse 1s infinite' }} />
+                <span className="mono-text" style={{ fontSize: '0.68rem', color: '#ff9900' }}>WS RECONNECTING</span>
+              </div>
+            )}
+
+            {/* Agent toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: agentRunning ? 'rgba(0,232,122,0.08)' : 'rgba(255,51,102,0.08)', border: `1px solid ${agentRunning ? 'rgba(0,232,122,0.2)' : 'rgba(255,51,102,0.25)'}`, borderRadius: '20px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: agentRunning ? 'var(--green)' : 'var(--pink)', boxShadow: `0 0 6px ${agentRunning ? 'var(--green-glow)' : 'var(--pink-glow)'}` }} />
+              <span className="mono-text" style={{ fontSize: '0.68rem', color: agentRunning ? 'var(--green)' : 'var(--pink)' }}>
                 {agentRunning ? t('agent_running') : t('agent_stopped')}
               </span>
-              <button
-                className="neon-btn"
-                onClick={toggleAgent}
-                style={{ fontSize: '0.75rem', background: agentRunning ? 'rgba(255,51,102,0.15)' : undefined, borderColor: agentRunning ? '#ff3366' : undefined, color: agentRunning ? '#ff3366' : undefined }}
-              >
+              <button onClick={toggleAgent} className="neon-btn"
+                style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderColor: agentRunning ? 'rgba(255,51,102,0.5)' : 'rgba(0,232,122,0.5)', color: agentRunning ? 'var(--pink)' : 'var(--green)', background: 'transparent' }}>
                 {agentRunning ? t('btn_stop') : t('btn_start')}
               </button>
             </div>
 
             <LanguageSwitcher />
-            <span className="mono-text text-muted" style={{ fontSize: '0.8rem' }}>// {username}</span>
-            <button className="neon-btn" onClick={handleLogout} style={{ fontSize: '0.75rem' }}>{t('btn_logout')}</button>
+            <span className="mono-text text-muted" style={{ fontSize: '0.72rem' }}>// {username}</span>
+            <button className="neon-btn" onClick={handleLogout} style={{ fontSize: '0.7rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
           </div>
         </div>
 
@@ -203,6 +214,9 @@ function App() {
           <TerminalConsole thoughts={thoughts} />
           <StrategyPanel />
         </div>
+
+        {/* Bottom Panel — All 6 Hackathon Tracks */}
+        <BottomPanel />
 
         {/* Mobile Bottom Navigation */}
         <nav className="mobile-nav">

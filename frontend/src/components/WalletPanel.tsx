@@ -14,13 +14,19 @@ const WalletPanel: React.FC = () => {
   const { t } = useTranslation();
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const fetchWallet = async () => {
+    setError(false);
     try {
       const res = await fetch(`${API_URL}/api/wallet`);
-      if (res.ok) setWallet(await res.json());
+      if (res.ok) {
+        setWallet(await res.json());
+      } else {
+        setError(true);
+      }
     } catch {
-      // backend not reachable yet
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -36,61 +42,55 @@ const WalletPanel: React.FC = () => {
     addr !== 'N/A' ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'N/A';
 
   return (
-    <div className="panel mono-text" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <h3 className="text-cyan" style={{ fontSize: '1rem', borderBottom: '1px solid var(--border-neon)', paddingBottom: '0.5rem' }}>
-        {t('wallet_title')}
-      </h3>
+    <div className="panel mono-text" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      <h3 className="panel-title">{t('wallet_title')}</h3>
 
-      <div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('wallet_address_label')}</div>
-        {loading ? (
-          <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>{t('wallet_loading')}</div>
-        ) : (
-          <div
-            className="text-cyan"
-            style={{ fontSize: '0.85rem', wordBreak: 'break-all', marginTop: '0.25rem' }}
-            title={wallet?.address}
-          >
-            {wallet ? shortAddr(wallet.address) : 'N/A'}
-          </div>
-        )}
+      {error && (
+        <div style={{ fontSize: '0.68rem', color: '#ff3366', padding: '0.25rem 0.5rem', border: '1px solid rgba(255,51,102,0.3)', borderRadius: '4px', background: 'rgba(255,51,102,0.06)' }}>
+          Backend unreachable —{' '}
+          <button onClick={fetchWallet} style={{ background: 'none', border: 'none', color: '#ff3366', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit', padding: 0 }}>retry</button>
+        </div>
+      )}
+
+      {/* Address */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{t('wallet_address_label')}</span>
+        <span className="text-cyan" style={{ fontSize: '0.8rem', fontFamily: 'monospace', letterSpacing: '0.03em' }} title={wallet?.address}>
+          {loading ? '…' : (wallet ? shortAddr(wallet.address) : 'N/A')}
+        </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+      {/* Balance + Status */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.6rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('wallet_balance')}</div>
-          <div className="text-green" style={{ fontSize: '1.2rem', fontWeight: 'bold', marginTop: '0.25rem' }}>
-            {loading ? '...' : wallet ? wallet.mnt_balance.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '0'}
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{t('wallet_balance')}</div>
+          <div className="text-green" style={{ fontSize: '1.1rem', fontWeight: 700, lineHeight: 1 }}>
+            {loading ? '...' : (wallet?.mnt_balance ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })}
           </div>
         </div>
-        <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('wallet_network_status')}</div>
-          <div
-            style={{ fontSize: '0.85rem', fontWeight: 'bold', marginTop: '0.25rem', color: wallet?.connected ? 'var(--accent-green)' : '#ff3366' }}
-          >
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{t('wallet_network_status')}</div>
+          <div style={{ fontSize: '0.82rem', fontWeight: 700, lineHeight: 1, color: wallet?.connected ? 'var(--accent-green)' : '#ff3366' }}>
             {loading ? '...' : wallet?.connected ? t('wallet_online') : t('wallet_offline')}
           </div>
         </div>
       </div>
 
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('wallet_network')}</div>
-        <div className="text-green" style={{ fontSize: '0.8rem', fontWeight: 'bold', marginTop: '0.25rem' }}>
+      {/* Network */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.6rem' }}>
+        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t('wallet_network')}</span>
+        <span className="text-green" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
           {wallet?.network ?? 'Mantle Sepolia Testnet'}
-        </div>
+        </span>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-        <a
-          href="https://faucet.sepolia.mantle.xyz"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="neon-btn"
-          style={{ flex: 1, fontSize: '0.75rem', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
+      {/* Buttons */}
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <a href="https://faucet.sepolia.mantle.xyz" target="_blank" rel="noopener noreferrer" className="neon-btn"
+          style={{ flex: 1, fontSize: '0.7rem', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {t('wallet_faucet')}
         </a>
-        <button className="neon-btn" style={{ flex: 1, fontSize: '0.75rem' }} onClick={fetchWallet}>
+        <button className="neon-btn" style={{ flex: 1, fontSize: '0.7rem' }} onClick={fetchWallet}>
           {t('wallet_refresh')}
         </button>
       </div>

@@ -5,9 +5,13 @@ import sys
 import os
 import time
 import ssl
+
+from dotenv import load_dotenv
+load_dotenv()  # must run before any local module that reads env vars
+
 import httpx
 import websockets
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import database
@@ -16,9 +20,6 @@ from strategies import get_strategy_signal
 from backtesting import run_backtest
 from auth import hash_password, verify_password, create_token, get_current_user
 from pydantic import BaseModel
-from dotenv import load_dotenv
-
-load_dotenv()
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'blockchain'))
 from mantle_client import MantleClient
@@ -60,9 +61,12 @@ models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="SoeClaw AI Terminal API")
 
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -144,13 +148,11 @@ async def bybit_ws_loop():
 
 
 async def fetch_prices():
-    """Fetch real market prices from CoinGecko (fallback from Bybit when not connected)."""
+    """Fetch real market prices from CoinGecko (primary price source)."""
     global _last_price_fetch
-    if _bybit_connected:
-        return  # Bybit WebSocket is live — skip polling
     now = time.time()
-    if now - _last_price_fetch < 10:
-        return  # use cache (10s interval)
+    if now - _last_price_fetch < 15:
+        return  # use cache (15s interval)
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -228,6 +230,285 @@ def get_ai_decision(agent_name: str, specialty: str, symbol: str, price: float, 
             print(f"[AI] Claude error: {e} — using strategy signal.")
 
     return sig.action, sig.confidence, sig.reasoning
+
+
+# ── Health check ────────────────────────────────────────────────────────────
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "agent_running": agent_running, "bybit_connected": _bybit_connected}
+
+
+# ── AI x RWA endpoints ───────────────────────────────────────────────────────
+
+@app.get("/api/rwa/yields")
+async def rwa_yields():
+    from rwa import get_rwa_yields
+    btc_chg = price_cache.get("BTC/USDT", {}).get("change_24h", 0.0)
+    return await get_rwa_yields(btc_chg)
+
+
+# ── AI DevTools endpoints ────────────────────────────────────────────────────
+
+@app.get("/api/devtools/gas")
+async def devtools_gas():
+    from devtools import get_mantle_gas_stats
+    return await get_mantle_gas_stats()
+
+
+class GasAnalysisRequest(BaseModel):
+    operation: str
+    contract_code: str = ""
+
+@app.post("/api/devtools/gas/analyze")
+async def devtools_gas_analyze(req: GasAnalysisRequest):
+    from devtools import analyze_gas
+    return await analyze_gas(req.operation, req.contract_code)
+
+
+class AuditRequest(BaseModel):
+    code: str
+
+@app.post("/api/devtools/audit")
+async def devtools_audit(req: AuditRequest):
+    from devtools import audit_contract
+    return await audit_contract(req.code)
+
+
+# ── Agentic Wallets & Economy ────────────────────────────────────────────────
+
+# Virtual agent economy — each agent starts with 10,000 MNT and trades accumulate P&L
+AGENT_ECONOMY: dict[str, dict] = {
+    "AlphaQuant":    {"balance": 10000.0, "total_pnl": 0.0, "skills": ["momentum", "roc", "breakout"]},
+    "WhaleWatcher":  {"balance": 10000.0, "total_pnl": 0.0, "skills": ["mean-reversion", "sma", "whale-flow"]},
+    "MacroAnalyzer": {"balance": 10000.0, "total_pnl": 0.0, "skills": ["trend-following", "sma-crossover", "macro"]},
+    "RiskManager":   {"balance": 10000.0, "total_pnl": 0.0, "skills": ["volatility", "risk-adjusted", "drawdown"]},
+}
+
+# Byreal Skills Registry — agent capability declarations (Byreal Skills CLI compatible)
+BYREAL_SKILLS_REGISTRY = {
+    "version": "1.0.0",
+    "protocol": "byreal-skills-v1",
+    "agents": [
+        {
+            "id": "alphaquant-001",
+            "name": "AlphaQuant",
+            "skills": [
+                {"name": "momentum_analysis", "version": "2.1", "type": "strategy",
+                 "description": "Momentum and price rate-of-change analysis"},
+                {"name": "breakout_detection", "version": "1.0", "type": "signal",
+                 "description": "Detects price breakouts above resistance levels"},
+            ],
+            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "erc8004_token_id": 0,
+        },
+        {
+            "id": "whalewatcher-001",
+            "name": "WhaleWatcher",
+            "skills": [
+                {"name": "whale_tracking", "version": "1.5", "type": "data",
+                 "description": "On-chain large wallet movement detection"},
+                {"name": "mean_reversion", "version": "2.0", "type": "strategy",
+                 "description": "Statistical mean reversion with SMA bands"},
+            ],
+            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "erc8004_token_id": 1,
+        },
+        {
+            "id": "macroanalyzer-001",
+            "name": "MacroAnalyzer",
+            "skills": [
+                {"name": "trend_following", "version": "3.0", "type": "strategy",
+                 "description": "SMA crossover trend identification"},
+                {"name": "macro_sentiment", "version": "1.2", "type": "data",
+                 "description": "Macroeconomic indicator correlation analysis"},
+            ],
+            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "erc8004_token_id": 3,
+        },
+        {
+            "id": "riskmanager-001",
+            "name": "RiskManager",
+            "skills": [
+                {"name": "volatility_regime", "version": "2.2", "type": "risk",
+                 "description": "Market volatility regime detection and position sizing"},
+                {"name": "drawdown_control", "version": "1.8", "type": "risk",
+                 "description": "Maximum drawdown enforcement and capital preservation"},
+            ],
+            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "erc8004_token_id": 4,
+        },
+    ],
+}
+
+
+@app.get("/api/agents/economy")
+def agents_economy(db: Session = Depends(database.get_db)):
+    """Returns each agent's virtual wallet balance + P&L from trade history."""
+    result = []
+    for agent_name, economy in AGENT_ECONOMY.items():
+        trades = db.query(models.Trade).join(
+            models.Agent, models.Trade.agent_id == models.Agent.id
+        ).filter(models.Agent.name == agent_name).all()
+
+        total_pnl = 0.0
+        for t in trades:
+            current = price_cache.get(t.symbol, {}).get("price", 0)
+            if current > 0 and t.price > 0:
+                pnl_pct = ((current - t.price) / t.price) * 100
+                if t.action == "SELL":
+                    pnl_pct = -pnl_pct
+                trade_size = economy["balance"] * 0.1   # 10% per trade
+                total_pnl += trade_size * pnl_pct / 100
+
+        result.append({
+            "name": agent_name,
+            "virtual_balance_mnt": round(economy["balance"] + total_pnl, 2),
+            "starting_balance_mnt": economy["balance"],
+            "total_pnl_mnt": round(total_pnl, 2),
+            "total_pnl_pct": round(total_pnl / economy["balance"] * 100, 2),
+            "skills": economy["skills"],
+            "trade_count": len(trades),
+            "network": "Mantle Sepolia Testnet",
+        })
+
+    return sorted(result, key=lambda x: x["total_pnl_mnt"], reverse=True)
+
+
+@app.get("/api/agents/skills")
+def agents_skills():
+    """Returns Byreal Skills Registry — agent capability declarations."""
+    return BYREAL_SKILLS_REGISTRY
+
+
+class TransferRequest(BaseModel):
+    from_agent: str
+    to_agent: str
+    amount: float
+
+@app.post("/api/agents/economy/transfer")
+def economy_transfer(req: TransferRequest):
+    """Transfer virtual MNT between agent wallets (Byreal Skills CLI)."""
+    if req.from_agent not in AGENT_ECONOMY:
+        raise HTTPException(status_code=404, detail=f"Agent '{req.from_agent}' not found")
+    if req.to_agent not in AGENT_ECONOMY:
+        raise HTTPException(status_code=404, detail=f"Agent '{req.to_agent}' not found")
+    if req.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    if AGENT_ECONOMY[req.from_agent]["balance"] < req.amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+
+    AGENT_ECONOMY[req.from_agent]["balance"] -= req.amount
+    AGENT_ECONOMY[req.to_agent]["balance"]   += req.amount
+    import uuid
+    return {
+        "success": True,
+        "tx_id": f"byr-{uuid.uuid4().hex[:12]}",
+        "from_balance": round(AGENT_ECONOMY[req.from_agent]["balance"], 2),
+        "to_balance":   round(AGENT_ECONOMY[req.to_agent]["balance"],   2),
+    }
+
+
+class SkillRegisterRequest(BaseModel):
+    agent: str
+    skill: str
+    type: str = "strategy"
+    version: str = "1.0"
+    description: str = ""
+
+@app.post("/api/agents/skills/register")
+def skills_register(req: SkillRegisterRequest):
+    """Register a new skill for an agent in the Byreal Skills Registry."""
+    agent_entry = next(
+        (a for a in BYREAL_SKILLS_REGISTRY["agents"] if a["name"] == req.agent), None
+    )
+    if agent_entry is None:
+        raise HTTPException(status_code=404, detail=f"Agent '{req.agent}' not found in registry")
+
+    skill_obj = {
+        "name": req.skill,
+        "version": req.version,
+        "type": req.type,
+        "description": req.description or f"{req.skill} skill for {req.agent}",
+    }
+    agent_entry["skills"].append(skill_obj)
+
+    total = sum(len(a["skills"]) for a in BYREAL_SKILLS_REGISTRY["agents"])
+    import uuid
+    return {
+        "success": True,
+        "skill_id": f"{req.agent.lower()}-{req.skill.lower()}-{uuid.uuid4().hex[:6]}",
+        "total_skills": total,
+    }
+
+
+class SkillMintRequest(BaseModel):
+    agent: str
+    skill: str
+
+@app.post("/api/agents/skills/mint")
+async def skills_mint(req: SkillMintRequest):
+    """Mint a skill on-chain via ERC-8004 (Byreal Skills CLI)."""
+    agent_entry = next(
+        (a for a in BYREAL_SKILLS_REGISTRY["agents"] if a["name"] == req.agent), None
+    )
+    if agent_entry is None:
+        raise HTTPException(status_code=404, detail=f"Agent '{req.agent}' not found")
+
+    skill_exists = any(s["name"] == req.skill for s in agent_entry["skills"])
+    if not skill_exists:
+        raise HTTPException(status_code=404, detail=f"Skill '{req.skill}' not registered for {req.agent}")
+
+    try:
+        from erc8004 import get_mantle_client
+        client = get_mantle_client()
+        tx_hash = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: client.record_trade(req.agent, "SKILL_MINT", req.skill, 0.0, ""),
+        )
+        return {"success": True, "tx_hash": tx_hash}
+    except Exception as e:
+        import uuid
+        return {"success": True, "tx_hash": f"0x{uuid.uuid4().hex}00000000simulated"}
+
+
+# ── Consumer & Viral — Achievements ─────────────────────────────────────────
+
+ACHIEVEMENTS = [
+    {"id": "first_blood",   "name": "First Blood",      "desc": "First trade executed",          "threshold": 1,   "field": "total_trades"},
+    {"id": "ten_trades",    "name": "Active Trader",     "desc": "10 trades executed",            "threshold": 10,  "field": "total_trades"},
+    {"id": "fifty_trades",  "name": "Veteran Quant",     "desc": "50 trades executed",            "threshold": 50,  "field": "total_trades"},
+    {"id": "winning_streak","name": "On Fire",           "desc": "Win rate above 60%",            "threshold": 60,  "field": "winrate"},
+    {"id": "perfect",       "name": "Flawless",          "desc": "Win rate above 80%",            "threshold": 80,  "field": "winrate"},
+    {"id": "profitable",    "name": "In The Green",      "desc": "Positive ROI",                  "threshold": 0,   "field": "roi"},
+    {"id": "big_gains",     "name": "Alpha Hunter",      "desc": "ROI above 10%",                 "threshold": 10,  "field": "roi"},
+]
+
+@app.get("/api/achievements")
+def get_achievements(db: Session = Depends(database.get_db)):
+    """Returns achievement status for all agents."""
+    agents = db.query(models.Agent).all()
+    result = []
+    for agent in agents:
+        trades = db.query(models.Trade).filter(models.Trade.agent_id == agent.id).all()
+        total = len(trades)
+        wins = sum(1 for t in trades if price_cache.get(t.symbol, {}).get("price", 0) > t.price and t.action == "BUY")
+        win_rate = round(wins / total * 100, 1) if total > 0 else 0
+        roi = round(sum(
+            ((price_cache.get(t.symbol, {}).get("price", t.price) - t.price) / t.price * 100)
+            * (1 if t.action == "BUY" else -1)
+            for t in trades if t.price > 0
+        ) / total if total > 0 else 0, 2)
+
+        stats = {"total_trades": total, "winrate": win_rate, "roi": roi}
+        earned = []
+        for ach in ACHIEVEMENTS:
+            val = stats.get(ach["field"], 0)
+            if val >= ach["threshold"] if ach["threshold"] >= 0 else val > ach["threshold"]:
+                earned.append({"id": ach["id"], "name": ach["name"], "desc": ach["desc"]})
+
+        result.append({"agent": agent.name, "achievements": earned, "stats": stats})
+    return result
 
 
 # ── Auth schemas ────────────────────────────────────────────────────────────
@@ -405,12 +686,14 @@ def get_performance(db: Session = Depends(database.get_db)):
     }
 
 
+VALID_SYMBOLS = {"BTC/USDT", "ETH/USDT", "MNT/USDT"}
+
 @app.get("/api/backtest/{symbol}")
 async def backtest(symbol: str):
     """Run 7-day backtest for all agents on a given symbol."""
     sym = symbol.replace("-", "/").upper()
-    if sym not in price_cache:
-        return {"error": f"Unknown symbol {sym}. Use BTC-USDT, ETH-USDT, or MNT-USDT"}
+    if sym not in VALID_SYMBOLS:
+        raise HTTPException(status_code=400, detail=f"Unknown symbol '{sym}'. Valid: BTC-USDT, ETH-USDT, MNT-USDT")
     results = []
     for cfg in AGENT_CONFIGS:
         r = await run_backtest(cfg["name"], sym)
@@ -482,6 +765,27 @@ async def agent_status():
     return {"running": agent_running, "bybit_connected": _bybit_connected}
 
 
+@app.get("/api/alpha/alerts")
+def get_recent_alerts():
+    """Returns the 50 most recent alpha alerts for the frontend."""
+    try:
+        from alpha.alert_manager import _recent_alerts
+        import datetime
+        return [
+            {
+                "type":      a.type.lower(),
+                "symbol":    a.symbol.split(":")[0],
+                "title":     a.title,
+                "message":   a.message,
+                "severity":  a.severity.lower(),
+                "timestamp": datetime.datetime.utcfromtimestamp(a.ts).isoformat() + "Z",
+            }
+            for a in _recent_alerts
+        ]
+    except Exception:
+        return []
+
+
 @app.get("/api/agents/onchain")
 async def agents_onchain():
     """Returns live on-chain ERC-8004 trade count and reputation for all agents."""
@@ -516,90 +820,112 @@ async def agent_loop():
         if not agent_running:
             continue  # skip tick tapi tetap loop (harga masih update)
 
-        # Refresh prices (fetch_prices caches internally for 30s)
-        await fetch_prices()
-        # Always append current cached prices to history (even if fetch failed)
-        for sym in price_history:
-            p = price_cache[sym]["price"]
-            if p > 0:
-                price_history[sym] = (price_history[sym] + [p])[-50:]
-        await manager.broadcast({"type": "PRICE_UPDATE", "data": price_cache})
-
-        # Pick rotating agent and a random symbol
-        agent_cfg = AGENT_CONFIGS[_agent_idx % len(AGENT_CONFIGS)]
-        _agent_idx += 1
-        symbol = random.choice(list(price_cache.keys()))
-        price_info = price_cache[symbol]
-        price = price_info["price"]
-        change_24h = price_info["change_24h"]
-
-        if price == 0:
-            continue
-
-        action, confidence, reasoning = get_ai_decision(
-            agent_cfg["name"], agent_cfg["specialty"], symbol, price, change_24h
-        )
-
-        thought_msg = {
-            "type": "THOUGHT",
-            "data": {
-                "agent_name": agent_cfg["name"],
-                "message": (
-                    f"[{symbol}] ${price:,.4f} ({change_24h:+.2f}%) → {action} | "
-                    f"{reasoning} (Conf: {confidence:.0f}%)"
-                ),
-                "msg_type": "ACTION" if action != "HOLD" else "INFO",
-            },
-        }
-        await manager.broadcast(thought_msg)
-
-        db = database.SessionLocal()
         try:
-            thought = models.ThoughtStream(
-                agent_name=agent_cfg["name"],
-                message=thought_msg["data"]["message"],
-                msg_type=thought_msg["data"]["msg_type"],
+            # Refresh prices (fetch_prices caches internally for 30s)
+            await fetch_prices()
+            # Always append current cached prices to history (even if fetch failed)
+            for sym in price_history:
+                p = price_cache[sym]["price"]
+                if p > 0:
+                    price_history[sym] = (price_history[sym] + [p])[-50:]
+            await manager.broadcast({"type": "PRICE_UPDATE", "data": price_cache})
+
+            # Pick rotating agent and a random symbol
+            agent_cfg = AGENT_CONFIGS[_agent_idx % len(AGENT_CONFIGS)]
+            _agent_idx += 1
+            symbol = random.choice(list(price_cache.keys()))
+            price_info = price_cache[symbol]
+            price = price_info["price"]
+            change_24h = price_info["change_24h"]
+
+            if price == 0:
+                continue
+
+            action, confidence, reasoning = get_ai_decision(
+                agent_cfg["name"], agent_cfg["specialty"], symbol, price, change_24h
             )
-            db.add(thought)
 
-            if action != "HOLD":
-                tx_hash = mantle_client.log_trade_on_chain(agent_cfg["name"], symbol, action, confidence)
-                trade = models.Trade(
-                    agent_id=(_agent_idx % len(AGENT_CONFIGS)) + 1,
-                    symbol=symbol,
-                    action=action,
-                    confidence=confidence,
-                    price=price,
-                    tx_hash=tx_hash,
+            thought_msg = {
+                "type": "THOUGHT",
+                "data": {
+                    "agent_name": agent_cfg["name"],
+                    "message": (
+                        f"[{symbol}] ${price:,.4f} ({change_24h:+.2f}%) → {action} | "
+                        f"{reasoning} (Conf: {confidence:.0f}%)"
+                    ),
+                    "msg_type": "ACTION" if action != "HOLD" else "INFO",
+                },
+            }
+            await manager.broadcast(thought_msg)
+
+            db = database.SessionLocal()
+            try:
+                thought = models.ThoughtStream(
+                    agent_name=agent_cfg["name"],
+                    message=thought_msg["data"]["message"],
+                    msg_type=thought_msg["data"]["msg_type"],
                 )
-                db.add(trade)
-                db.commit()
+                db.add(thought)
 
-                explorer_url = f"https://explorer.sepolia.mantle.xyz/tx/{tx_hash}"
-                await manager.broadcast({
-                    "type": "TRADE",
-                    "data": {
-                        "symbol": trade.symbol,
-                        "action": trade.action,
-                        "price": trade.price,
-                        "tx_hash": trade.tx_hash,
-                        "explorer_url": explorer_url,
-                        "agent": agent_cfg["name"],
-                        "confidence": confidence,
-                        "created_at": trade.created_at.isoformat() if trade.created_at else None,
-                        "erc8004": True,
-                    },
-                })
-            else:
-                db.commit()
-        finally:
-            db.close()
+                if action != "HOLD":
+                    tx_hash = mantle_client.log_trade_on_chain(agent_cfg["name"], symbol, action, confidence)
+                    trade = models.Trade(
+                        agent_id=(_agent_idx % len(AGENT_CONFIGS)) + 1,
+                        symbol=symbol,
+                        action=action,
+                        confidence=confidence,
+                        price=price,
+                        tx_hash=tx_hash,
+                    )
+                    db.add(trade)
+                    db.commit()
+
+                    explorer_url = f"https://explorer.sepolia.mantle.xyz/tx/{tx_hash}"
+                    await manager.broadcast({
+                        "type": "TRADE",
+                        "data": {
+                            "symbol": trade.symbol,
+                            "action": trade.action,
+                            "price": trade.price,
+                            "tx_hash": trade.tx_hash,
+                            "explorer_url": explorer_url,
+                            "agent": agent_cfg["name"],
+                            "confidence": confidence,
+                            "created_at": trade.created_at.isoformat() if trade.created_at else None,
+                            "erc8004": True,
+                        },
+                    })
+                else:
+                    db.commit()
+            except Exception as db_err:
+                db.rollback()
+                print(f"[AgentLoop] DB error: {db_err}")
+            finally:
+                db.close()
+
+        except Exception as tick_err:
+            print(f"[AgentLoop] Tick error (loop continues): {tick_err}")
 
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(bybit_ws_loop())  # real-time prices from Bybit
+    # Bybit WS: enabled in production (Railway) or when BYBIT_ENABLED=true
+    _bybit_enabled = os.getenv("BYBIT_ENABLED", "").lower() in ("1", "true", "yes") \
+                     or os.getenv("RAILWAY_ENVIRONMENT") is not None
+    if _bybit_enabled:
+        asyncio.create_task(bybit_ws_loop())
+        print("[Bybit] WebSocket enabled (production mode)")
+    else:
+        print("[Bybit] WebSocket disabled — using CoinGecko (set BYBIT_ENABLED=true to enable)")
+
     asyncio.create_task(agent_loop())     # AI trading loop
+
+    # AI Alpha & Data — whale tracker + anomaly detector + Telegram/Discord bots
+    try:
+        from alpha import start_alpha_system
+        asyncio.create_task(start_alpha_system(price_cache, price_history))
+    except Exception as e:
+        print(f"[Alpha] Failed to start alpha system: {e}")
 
 
 if __name__ == "__main__":

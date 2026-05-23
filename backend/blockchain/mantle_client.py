@@ -139,8 +139,7 @@ class MantleClient:
         Returns the ERC-8004 tx hash (the canonical on-chain identity record).
         """
         if not self.connected or not PRIVATE_KEY:
-            import random
-            return f"0x{random.randint(10**63, 10**64-1):x}"
+            return f"0x{'0' * 64}_offline"
 
         try:
             account = self.w3.eth.account.from_key(PRIVATE_KEY)
@@ -192,8 +191,7 @@ class MantleClient:
 
         except Exception as e:
             print(f"[MantleClient] Fatal error: {e}")
-            import random
-            return f"0x{random.randint(10**63, 10**64-1):x}"
+            return f"0x{'0' * 64}_error"
 
     def get_agent_stats(self, agent_name: str) -> dict:
         """Returns on-chain trade count and reputation for an agent."""

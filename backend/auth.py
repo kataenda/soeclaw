@@ -5,11 +5,13 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-SECRET_KEY = os.getenv("JWT_SECRET", "soeclaw-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET", "")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET env var is not set — refusing to start without a secret key")
 ALGORITHM  = "HS256"
 TOKEN_EXPIRE_HOURS = 24
 
-pwd_context   = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
