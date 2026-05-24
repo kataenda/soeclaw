@@ -291,6 +291,14 @@ function buildCandleHistory(currentPrice: number, change24h: number, realCandles
     sim.push({ time: ts, label: '', open: +open.toFixed(2), close: +close.toFixed(2), high: +high.toFixed(2), low: +low.toFixed(2), volume: +(Math.abs(close-open)/Math.abs(open||1)*1e6*(0.3+Math.random())).toFixed(0) });
     price = close;
   }
+  // Pin the last simulated candle's close to exactly currentPrice so the
+  // chart price indicator is always in sync with the header price on load.
+  if (sim.length > 0) {
+    const tip = sim[sim.length - 1];
+    tip.close = currentPrice;
+    tip.high  = Math.max(tip.open, tip.high, currentPrice);
+    tip.low   = Math.min(tip.open, tip.low,  currentPrice);
+  }
   const all = [...sim, ...realCandles];
   const seen = new Set<number>();
   return all.filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; }).sort((a,b) => a.time - b.time);
@@ -502,6 +510,23 @@ const CandlestickChart: React.FC<CandleProps> = ({
       ma5Ref.current?.setData(showMA ? toMA(calcMA(sorted, 5))  : []);
       ma20Ref.current?.setData(showMA ? toMA(calcMA(sorted, 20)) : []);
       chartRef.current.timeScale().scrollToRealTime();
+
+      // Immediately snap price line to real price so it never shows a stale
+      // simulation close after setData (before the first live tick fires).
+      if (currentPrice > 0 && lastCandleRef.current) {
+        const snapLast = lastCandleRef.current;
+        const intSec   = TF_CONFIG[timeframe].interval * 60;
+        const snapTime = Math.floor(Date.now() / 1000 / intSec) * intSec;
+        const snapIsCur = snapTime === snapLast.time;
+        try {
+          if (isOHLC) {
+            candleRef.current.update({ time: snapTime, open: snapIsCur ? snapLast.open : currentPrice, high: snapIsCur ? Math.max(snapLast.high, currentPrice) : currentPrice, low: snapIsCur ? Math.min(snapLast.low, currentPrice) : currentPrice, close: currentPrice });
+          } else if (isSingle) {
+            candleRef.current.update({ time: snapTime, value: currentPrice });
+          }
+          lastCandleRef.current = { ...snapLast, time: snapTime, close: currentPrice, high: snapIsCur ? Math.max(snapLast.high, currentPrice) : currentPrice, low: snapIsCur ? Math.min(snapLast.low, currentPrice) : currentPrice };
+        } catch (_) {}
+      }
     } catch (_) {}
   }, [data, chartStyle, showMA]);
 
