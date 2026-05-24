@@ -253,7 +253,7 @@ function App() {
         </div>
 
         {/* Bottom Panel — AI Thought Stream + SOECLAW Insights */}
-        <div style={{ gridColumn: '1 / 3', display: 'flex', gap: '0.85rem', overflow: 'hidden', minHeight: '340px' }}>
+        <div style={{ gridColumn: '1 / 3', display: 'flex', gap: '0.85rem', overflow: 'hidden', minHeight: 0 }}>
           <div style={{ width: '268px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             <TerminalConsole thoughts={thoughts} />
           </div>
