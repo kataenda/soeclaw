@@ -1,9 +1,10 @@
 [phases.setup]
-nixPkgs = ["python310", "nodejs_20"]
+nixPkgs = ["python310", "python310Packages.pip", "nodejs_20"]
 
 [phases.install]
 cmds = [
-  "pip install -r backend/requirements.txt",
+  "python3.10 -m pip install --upgrade pip",
+  "python3.10 -m pip install -r backend/requirements.txt",
   "npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli"
 ]
 
