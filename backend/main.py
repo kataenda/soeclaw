@@ -27,6 +27,13 @@ from mantle_client import MantleClient, EXPLORER_BASE
 
 mantle_client = MantleClient()
 
+def _valid_tx(h) -> bool:
+    """Return True only for a real on-chain tx hash (non-null, non-zero)."""
+    if not h:
+        return False
+    bare = str(h).lower().lstrip('0x').split('_')[0]
+    return bool(bare) and bare != '0' * 64
+
 # Anthropic client (optional — falls back to rule-based if key missing)
 ANTHROPIC_API_KEY = os.getenv("AGENT_API_KEY", "")
 anthropic_client = None
@@ -57,10 +64,56 @@ price_history: dict[str, list[float]] = {
 }
 
 AGENT_CONFIGS = [
-    {"name": "AlphaQuant",    "specialty": "momentum and technical analysis"},
-    {"name": "WhaleWatcher",  "specialty": "on-chain whale flow and order book depth"},
-    {"name": "RiskManager",   "specialty": "risk-adjusted returns and volatility management"},
-    {"name": "MacroAnalyzer", "specialty": "macroeconomic indicators and market sentiment"},
+    {
+        "name": "AlphaQuant",
+        "specialty": "momentum and technical analysis",
+        "system": (
+            "You are AlphaQuant, an elite quantitative trading AI on Mantle L2. "
+            "You specialize in momentum, price action, and technical pattern recognition. "
+            "You analyze price velocity, acceleration, and short-term momentum bursts. "
+            "You look for: breakout above resistance, accelerating uptrend, RSI divergence, and momentum exhaustion. "
+            "Your edge is catching trends EARLY and exiting before reversal. "
+            "Be decisive and conviction-driven. Confidence above 85% only for strong momentum setups."
+        ),
+    },
+    {
+        "name": "WhaleWatcher",
+        "specialty": "on-chain whale flow and order book depth",
+        "system": (
+            "You are WhaleWatcher, an on-chain intelligence AI agent on Mantle L2. "
+            "You specialize in detecting large wallet movements, order flow imbalances, and liquidity shifts. "
+            "You infer whale behavior from price impact: sudden spikes = whale buy, sharp drops = whale dump. "
+            "You look for: mean reversion after whale-induced spikes, accumulation zones, and liquidity voids. "
+            "Your edge is fading overextended moves caused by whale manipulation. "
+            "Be contrarian by nature — buy the dip after whale dumps, sell into whale pumps."
+        ),
+    },
+    {
+        "name": "RiskManager",
+        "specialty": "risk-adjusted returns and volatility management",
+        "system": (
+            "You are RiskManager, a risk-first AI agent on Mantle L2. "
+            "You specialize in volatility analysis, drawdown protection, and portfolio risk management. "
+            "You calculate implied volatility from recent price swings and size positions accordingly. "
+            "Your primary rule: NEVER risk more than your reputation allows. In high-vol regimes, HOLD or take tiny positions. "
+            "You look for: low-volatility dip entries with tight stop-loss, volatility compression before breakout. "
+            "Your edge is preserving capital in bear conditions and sizing up aggressively in low-risk setups. "
+            "Be conservative unless volatility is LOW and the signal is crystal clear."
+        ),
+    },
+    {
+        "name": "MacroAnalyzer",
+        "specialty": "macroeconomic indicators and market sentiment",
+        "system": (
+            "You are MacroAnalyzer, a macro-driven AI agent on Mantle L2. "
+            "You specialize in reading broad market regime, cross-asset correlation, and sentiment cycles. "
+            "You use BTC 24h change as a proxy for risk appetite: BTC up = risk-on, BTC down = risk-off. "
+            "You analyze: trend direction from moving average spread, market regime (RISK_ON/NEUTRAL/RISK_OFF), "
+            "and whether the current move is driven by fundamentals or speculation. "
+            "Your edge is identifying macro turning points and front-running regime changes. "
+            "Be trend-following when macro is clear, cautious when macro is mixed."
+        ),
+    },
 ]
 
 models.Base.metadata.create_all(bind=database.engine)
@@ -159,7 +212,7 @@ async def oracle_loop():
                     mantle_client.fulfill_ai_request,
                     rid, action, conf_int, reasoning
                 )
-                explorer = f"{EXPLORER_BASE}/tx/{tx_hash}"
+                explorer = f"{EXPLORER_BASE}/tx/{tx_hash}" if _valid_tx(tx_hash) else None
 
                 # Broadcast to dashboard
                 await manager.broadcast({
@@ -286,21 +339,18 @@ def get_ai_decision(
     agent_name: str, specialty: str, symbol: str,
     price: float, change_24h: float,
     reputation: int = 0, onchain_trades: int = 0,
+    system_prompt: str = "",
 ):
     """
     Return (action, confidence, reasoning, position_size_pct).
-    1. Strategy module generates a raw signal from price history
-    2. ERC-8004 reputation modifier adjusts position size (blockchain feedback loop)
-    3. Claude refines reasoning with reputation context (if API key set)
+    Primary: Claude AI with per-agent system prompt — each agent has a unique analysis style.
+    Fallback: rule-based strategy when API key is not set or Claude errors.
     """
-    from strategies import apply_reputation_modifier
+    from strategies import get_strategy_signal, apply_reputation_modifier
 
     history = price_history.get(symbol, [])
-    raw_sig = get_strategy_signal(agent_name, history, change_24h)
 
-    # ── ERC-8004 feedback loop: on-chain reputation → position sizing ──────
-    sig = apply_reputation_modifier(raw_sig, reputation, onchain_trades)
-
+    # ── Claude AI — each agent is a distinct AI persona ───────────────────────
     if anthropic_client:
         try:
             rep_label = (
@@ -309,43 +359,57 @@ def get_ai_decision(
                 else "CONSERVATIVE — on losing streak, reduce risk exposure"    if reputation < 0
                 else "NEUTRAL — building on-chain track record"
             )
-            prompt = (
-                f"You are {agent_name}, an autonomous AI crypto trading agent "
-                f"specializing in {specialty}.\n\n"
-                f"Market data:\n"
-                f"- Asset: {symbol} @ ${price:,.4f}\n"
-                f"- 24h Change: {change_24h:+.2f}%\n"
-                f"- Strategy signal: {sig.action} (confidence {sig.confidence:.0f}%)\n"
-                f"- Strategy reasoning: {sig.reasoning}\n\n"
-                f"Your live ERC-8004 identity on Mantle blockchain:\n"
-                f"- Reputation score: {reputation} ({rep_label})\n"
-                f"- Verified on-chain decisions: {onchain_trades}\n"
-                f"- Reputation-adjusted position size: {sig.position_size_pct}%\n\n"
-                f"Your reputation directly shapes your position size. Factor this into your decision. "
-                f"Respond ONLY with valid JSON:\n"
-                f'{{ "action": "BUY"|"SELL"|"HOLD", "confidence": <60-99>, "reasoning": "<one sentence>" }}'
+            recent_prices = history[-10:] if len(history) >= 10 else history
+            price_summary = ", ".join(f"${p:,.2f}" for p in recent_prices) if recent_prices else "no history yet"
+            max_size = 25 if reputation >= 20 else (18 if reputation >= 10 else (6 if reputation < 0 else 10))
+
+            # SMA5 and SMA20 for additional context
+            sma5  = round(sum(history[-5:])  / 5,  4) if len(history) >= 5  else price
+            sma20 = round(sum(history[-20:]) / 20, 4) if len(history) >= 20 else price
+            trend = "UPTREND" if sma5 > sma20 else ("DOWNTREND" if sma5 < sma20 else "SIDEWAYS")
+
+            user_prompt = (
+                f"LIVE MARKET DATA — {symbol}:\n"
+                f"- Price: ${price:,.4f}\n"
+                f"- 24h change: {change_24h:+.2f}%\n"
+                f"- SMA5: ${sma5:,.4f} | SMA20: ${sma20:,.4f} | Trend: {trend}\n"
+                f"- Recent prices (oldest→newest): {price_summary}\n\n"
+                f"YOUR ERC-8004 IDENTITY (Mantle Sepolia):\n"
+                f"- Reputation: {reputation} ({rep_label})\n"
+                f"- On-chain decisions: {onchain_trades}\n"
+                f"- Max position size: {max_size}%\n\n"
+                f"Analyze using your expertise and make an independent trading decision. "
+                f"Respond ONLY with valid JSON (no markdown, no explanation outside JSON):\n"
+                f'{{"action":"BUY"|"SELL"|"HOLD","confidence":<60-99>,"reasoning":"<one sentence max 120 chars>","position_size_pct":<1-{max_size}>}}'
             )
             msg = anthropic_client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=150,
-                messages=[{"role": "user", "content": prompt}],
+                max_tokens=180,
+                system=system_prompt or f"You are {agent_name}, an autonomous AI trading agent specializing in {specialty}.",
+                messages=[{"role": "user", "content": user_prompt}],
             )
             text = msg.content[0].text.strip()
             if "```" in text:
                 text = text.split("```")[1].replace("json", "").strip()
             result = json.loads(text)
-            action = result.get("action", sig.action).upper()
+            action = result.get("action", "HOLD").upper()
             if action not in ("BUY", "SELL", "HOLD"):
-                action = sig.action
+                action = "HOLD"
+            pos_size = float(result.get("position_size_pct", max_size * 0.5))
+            pos_size = round(min(max_size, max(1.0, pos_size)), 1)
+            print(f"[AI] {agent_name} → {action} {symbol} conf={result.get('confidence')}%")
             return (
                 action,
-                round(float(result.get("confidence", sig.confidence)), 2),
-                result.get("reasoning", sig.reasoning),
-                sig.position_size_pct,
+                round(float(result.get("confidence", 70)), 2),
+                result.get("reasoning", "AI decision"),
+                pos_size,
             )
         except Exception as e:
-            print(f"[AI] Claude error: {e} — using strategy signal.")
+            print(f"[AI] Claude error for {agent_name}: {e} — falling back to rule-based.")
 
+    # ── Fallback: rule-based strategy (no API key or Claude error) ─────────────
+    raw_sig = get_strategy_signal(agent_name, history, change_24h)
+    sig = apply_reputation_modifier(raw_sig, reputation, onchain_trades)
     return sig.action, sig.confidence, sig.reasoning, sig.position_size_pct
 
 
@@ -393,7 +457,7 @@ async def rwa_rebalance():
         mantle_client.log_decision_on_chain,
         "RWA_MANAGER", "RWA_PORTFOLIO", action_str, confidence
     )
-    explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}"
+    explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}" if _valid_tx(tx_hash) else None
 
     # Broadcast to dashboard
     await manager.broadcast({
@@ -1556,71 +1620,55 @@ async def agent_loop():
                 },
             })
 
-            # ── Step 2: DATA — raw market feed ───────────────────────────────
+            # ── Step 2: DATA — market feed ingested by AI ────────────────────
             history_len = len(price_history.get(symbol, []))
             sma_fast = round(sum(price_history[symbol][-5:]) / 5, 4) if len(price_history.get(symbol, [])) >= 5 else price
             sma_slow = round(sum(price_history[symbol][-20:]) / 20, 4) if len(price_history.get(symbol, [])) >= 20 else price
-            momentum_sig = "^ BULLISH" if sma_fast > sma_slow else ("v BEARISH" if sma_fast < sma_slow else "- FLAT")
+            trend_sig = "UPTREND" if sma_fast > sma_slow else ("DOWNTREND" if sma_fast < sma_slow else "SIDEWAYS")
             await manager.broadcast({
                 "type": "THOUGHT",
                 "data": {
                     "agent_name": agent_cfg["name"],
                     "message": (
-                        f"STEP 1/4 · MARKET DATA · {symbol} "
+                        f"STEP 1/3 · INGESTING MARKET FEED · {symbol} "
                         f"@ ${price:,.4f} ({change_24h:+.2f}% 24h) · "
                         f"SMA5={sma_fast:,.4f} SMA20={sma_slow:,.4f} · "
-                        f"Momentum {momentum_sig} · history={history_len}pts"
+                        f"Trend={trend_sig} · datapoints={history_len}"
                     ),
                     "msg_type": "DATA",
                 },
             })
 
-            # ── Step 3: DATA — strategy signal ───────────────────────────────
-            from strategies import get_strategy_signal
-            raw_sig = get_strategy_signal(agent_cfg["name"], price_history.get(symbol, []), change_24h)
-            await manager.broadcast({
-                "type": "THOUGHT",
-                "data": {
-                    "agent_name": agent_cfg["name"],
-                    "message": (
-                        f"STEP 2/4 · STRATEGY SIGNAL · {raw_sig.action} "
-                        f"conf={raw_sig.confidence:.0f}% · {raw_sig.reasoning} · "
-                        f"position_size={raw_sig.position_size_pct}%"
-                    ),
-                    "msg_type": "DATA",
-                },
-            })
-
-            # ── Step 4: DATA — risk check ─────────────────────────────────────
+            # ── Step 3: AI analysis — send to Claude with agent's system prompt
             btc_vol = abs(price_cache.get("BTC/USDT", {}).get("change_24h", 0.0))
             risk_status = "ELEVATED" if btc_vol > 4 else ("MODERATE" if btc_vol > 2 else "LOW")
-            rep_adj = f"+30% size" if reputation >= 10 else ("-20% size (loss streak)" if reputation < 0 else "no adj")
             await manager.broadcast({
                 "type": "THOUGHT",
                 "data": {
                     "agent_name": agent_cfg["name"],
                     "message": (
-                        f"STEP 3/4 · RISK CHECK · market_vol={risk_status} "
-                        f"(BTC Δ={btc_vol:.1f}%) · ERC-8004 rep={reputation} -> {rep_adj} · "
-                        f"circuit_breaker={'ON' if btc_vol > 6 else 'OFF'}"
+                        f"STEP 2/3 · AI ANALYSIS · calling Claude ({agent_cfg['specialty']}) · "
+                        f"market_risk={risk_status} (BTC Δ={btc_vol:.1f}%) · "
+                        f"ERC-8004 rep={reputation} · max_size="
+                        f"{'25' if reputation >= 20 else ('18' if reputation >= 10 else ('6' if reputation < 0 else '10'))}%"
                     ),
                     "msg_type": "DATA",
                 },
             })
 
-            # ── Step 5: Make decision — reputation shapes position size ───────
+            # ── Step 4: AI makes the decision ────────────────────────────────
             action, confidence, reasoning, position_size = get_ai_decision(
                 agent_cfg["name"], agent_cfg["specialty"], symbol, price, change_24h,
                 reputation, onchain_trades,
+                system_prompt=agent_cfg.get("system", ""),
             )
 
-            # ── Step 6: DATA — final decision summary ─────────────────────────
             await manager.broadcast({
                 "type": "THOUGHT",
                 "data": {
                     "agent_name": agent_cfg["name"],
                     "message": (
-                        f"STEP 4/4 · FINAL DECISION · {action} {symbol} "
+                        f"STEP 3/3 · AI DECISION · {action} {symbol} "
                         f"conf={confidence:.0f}% · size={position_size}% · "
                         f"{reasoning}"
                     ),
@@ -1666,7 +1714,7 @@ async def agent_loop():
                     db.add(trade)
                     db.commit()
 
-                    explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}"
+                    explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}" if _valid_tx(tx_hash) else None
                     await manager.broadcast({
                         "type": "TRADE",
                         "data": {
@@ -1757,7 +1805,7 @@ async def agent_loop():
                         hold_tx = await asyncio.to_thread(
                             mantle_client.log_decision_on_chain, agent_cfg["name"], symbol, "HOLD", confidence
                         )
-                        hold_explorer = f"{EXPLORER_BASE}/tx/{hold_tx}"
+                        hold_explorer = f"{EXPLORER_BASE}/tx/{hold_tx}" if _valid_tx(hold_tx) else None
                         chain_msg = f"HOLD recorded on-chain — {agent_cfg['name']} held {symbol} (Conf: {confidence:.0f}%)"
                         chain_thought = models.ThoughtStream(
                             agent_name="MANTLE",
@@ -1934,8 +1982,8 @@ def cfo_decision_timeline(db: Session = Depends(database.get_db)):
             "pnl_pct":       round(pnl_pct, 2),
             "pnl_usd":       round(pnl_usd, 2),
             "tx_hash":       t.tx_hash,
-            "explorer_url":  f"{EXPLORER_BASE}/tx/{t.tx_hash}" if t.tx_hash else None,
-            "verified":      bool(t.tx_hash),
+            "explorer_url":  f"{EXPLORER_BASE}/tx/{t.tx_hash}" if _valid_tx(t.tx_hash) else None,
+            "verified":      _valid_tx(t.tx_hash),
             "outcome":       "WIN" if pnl_usd > 0 else ("LOSS" if pnl_usd < 0 else "OPEN"),
         })
 
@@ -1986,7 +2034,7 @@ def cfo_alpha_scorecard(db: Session = Depends(database.get_db)):
     peak    = 0.0
     max_dd  = 0.0
     wins    = 0
-    verified = sum(1 for t in trades if t.tx_hash)
+    verified = sum(1 for t in trades if _valid_tx(t.tx_hash))
 
     agent_acc: dict[int, dict] = {}
 
@@ -2384,9 +2432,9 @@ def cfo_audit_trail(db: Session = Depends(database.get_db)):
             "entity": f"Agent#{t.agent_id}",
             "action": f"{t.action} {t.symbol} @ ${t.price:,.4f}",
             "symbol": t.symbol,
-            "tx_hash": t.tx_hash,
+            "tx_hash": t.tx_hash if _valid_tx(t.tx_hash) else None,
             "regulatory_category": "CRYPTO_TRADING",
-            "on_chain": bool(t.tx_hash),
+            "on_chain": _valid_tx(t.tx_hash),
             "compliant": True,
         })
     for th in thoughts:
@@ -2663,10 +2711,41 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
         await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": False}})
         return {"reply": "Oke. Semua AI agent telah dihentikan. Trading dihentikan — tidak ada keputusan BUY/SELL yang akan dieksekusi sampai kamu aktifkan kembali.", "ai": True}
 
-    if any(k in msg_lower for k in start_keywords) and not agent_running:
+    if any(k in msg_lower for k in start_keywords):
+        # Wallet must be connected before trading can start
+        if not req.wallet_address:
+            return {
+                "reply": (
+                    "⚠️ Wallet belum terhubung!\n\n"
+                    "Untuk menjalankan trading, kamu perlu connect wallet dulu:\n"
+                    "1. Klik tombol CONNECT WALLET di panel kiri atas\n"
+                    "2. Approve koneksi di MetaMask / wallet kamu\n"
+                    "3. Setelah wallet terhubung, kirim perintah ini lagi\n\n"
+                    "Trading tidak dapat dijalankan tanpa wallet terkoneksi."
+                ),
+                "ai": True,
+            }
+        short_addr = f"{req.wallet_address[:6]}...{req.wallet_address[-4:]}"
+        if agent_running:
+            return {
+                "reply": (
+                    f"AI agents sudah aktif dan berjalan!\n\n"
+                    f"Wallet: {short_addr}\n"
+                    f"AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager "
+                    f"sedang scanning market secara real-time."
+                ),
+                "ai": True,
+            }
         agent_running = True
         await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": True}})
-        return {"reply": "Siap. Semua AI agent diaktifkan kembali. AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager mulai scanning market.", "ai": True}
+        return {
+            "reply": (
+                f"Siap! Wallet {short_addr} terhubung.\n\n"
+                f"Semua AI agent diaktifkan: AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager "
+                f"mulai scanning market dan mencatat keputusan ke Mantle blockchain."
+            ),
+            "ai": True,
+        }
 
     # ── Live context ──────────────────────────────────────────────────────────
     btc  = price_cache.get("BTC/USDT",  {})

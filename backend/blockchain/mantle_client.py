@@ -199,13 +199,14 @@ class MantleClient:
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
         return receipt.transactionHash.hex()
 
-    def log_trade_on_chain(self, agent_name: str, symbol: str, action: str, confidence: float) -> str:
+    def log_trade_on_chain(self, agent_name: str, symbol: str, action: str, confidence: float):
         """
         Records trade on SoeClaw contract AND updates ERC-8004 AgentIdentityRegistry.
-        Returns the ERC-8004 tx hash (the canonical on-chain identity record).
+        Returns the ERC-8004 tx hash (the canonical on-chain identity record), or None if offline/failed.
         """
         if not self.connected or not PRIVATE_KEY:
-            return f"0x{'0' * 64}_offline"
+            print(f"[MantleClient] Offline — skipping on-chain log for {agent_name}")
+            return None
 
         try:
             account = self.w3.eth.account.from_key(PRIVATE_KEY)
@@ -253,19 +254,21 @@ class MantleClient:
                 except Exception as e:
                     print(f"[MantleClient] updateReputation failed: {e}")
 
-            return erc8004_hash or soeclaw_hash or f"0x{'0'*64}"
+            return erc8004_hash or soeclaw_hash or None
 
         except Exception as e:
             print(f"[MantleClient] Fatal error: {e}")
-            return f"0x{'0' * 64}_error"
+            return None
 
-    def log_decision_on_chain(self, agent_name: str, symbol: str, action: str, confidence: float) -> str:
+    def log_decision_on_chain(self, agent_name: str, symbol: str, action: str, confidence: float):
         """
         Records ANY agent decision (including HOLD) on SoeClaw contract only.
         Lighter than log_trade_on_chain — no reputation update for non-trade decisions.
+        Returns tx hash string or None if offline/failed.
         """
         if not self.connected or not PRIVATE_KEY:
-            return f"0x{'0' * 64}_offline"
+            print(f"[MantleClient] Offline — skipping decision log for {agent_name}")
+            return None
         try:
             account = self.w3.eth.account.from_key(PRIVATE_KEY)
             conf_int = int(confidence * 100)
@@ -277,15 +280,15 @@ class MantleClient:
                 )
                 print(f"[MantleClient] Decision on-chain: {agent_name} {action} {symbol} -> {tx_hash}")
                 return tx_hash
-            return f"0x{'0'*64}"
+            return None
         except Exception as e:
             print(f"[MantleClient] log_decision error: {e}")
-            return f"0x{'0' * 64}_error"
+            return None
 
-    def fulfill_ai_request(self, request_id: int, action: str, confidence: int, reasoning: str) -> str:
-        """Backend oracle: calls fulfillAIResult() after AI inference."""
+    def fulfill_ai_request(self, request_id: int, action: str, confidence: int, reasoning: str):
+        """Backend oracle: calls fulfillAIResult() after AI inference. Returns tx hash or None."""
         if not self.connected or not PRIVATE_KEY or not self.contract:
-            return f"0x{'0' * 64}_offline"
+            return None
         try:
             account = self.w3.eth.account.from_key(PRIVATE_KEY)
             nonce   = self.w3.eth.get_transaction_count(account.address)
@@ -297,7 +300,7 @@ class MantleClient:
             return tx_hash
         except Exception as e:
             print(f"[Oracle] fulfillAIResult error: {e}")
-            return f"0x{'0' * 64}_error"
+            return None
 
     def get_pending_ai_requests(self, from_block: int = 0) -> list:
         """Scan for AIRequested events that have not been fulfilled yet."""
