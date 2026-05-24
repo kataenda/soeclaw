@@ -75,6 +75,10 @@ function App() {
         setThoughts(data.slice(0, 50).map(t => ({ agent_name: t.agent_name, message: t.message, msg_type: t.msg_type })))
       )
       .catch(() => {});
+    fetch(`${API}/api/agent/status`)
+      .then(r => r.json())
+      .then((data: { running: boolean }) => setAgentRunning(data.running))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
