@@ -164,7 +164,7 @@ function ReportTab() {
               return (
                 <div key={m.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                   <div style={{ width: '100%', height: h, background: `${c}55`, border: `1px solid ${c}88`, borderRadius: 2 }} title={`${m.month}: ${sign(m.pnl_usd)}$${Math.abs(m.pnl_usd).toFixed(0)}`} />
-                  <span style={{ fontSize: '0.45rem', color: 'var(--text-dim)', transform: 'rotate(-30deg)', transformOrigin: 'top right' }}>{m.month.slice(5)}</span>
+                  <span style={{ fontSize: '0.45rem', color: 'var(--text-dim)', transform: 'rotate(-30deg)', transformOrigin: 'top right' }}>{m.month?.slice(5) ?? ''}</span>
                 </div>
               );
             })}
@@ -713,7 +713,7 @@ function TimelineTab() {
               {ev.tx_hash && ev.explorer_url && (
                 <a href={ev.explorer_url} target="_blank" rel="noopener noreferrer"
                   style={{ fontSize: '0.5rem', color: '#f7931a', textDecoration: 'none', marginTop: 1, display: 'inline-block' }}>
-                  tx: {ev.tx_hash.slice(0, 18)}… ↗
+                  tx: {ev.tx_hash?.slice(0, 18)}… ↗
                 </a>
               )}
             </div>
