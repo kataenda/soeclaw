@@ -270,10 +270,15 @@ function buildCandleHistory(currentPrice: number, change24h: number, realCandles
   const needed = Math.max(0, target - realCandles.length);
   if (needed === 0) return realCandles.slice(-target);
   const { interval, vol } = TF_CONFIG[tf];
+  const intervalSec = interval * 60;
+  const nowSec = Math.floor(Date.now() / 1000);
+  // Align to the same grid as the live-tick candleTime so the last simulated
+  // candle and the first live update share the same timestamp (no gap/jump).
+  const latestCandleTime = Math.floor(nowSec / intervalSec) * intervalSec;
+
   const anchor = realCandles[0]?.open ?? currentPrice;
   const start  = anchor / (1 + change24h / 100);
   const trend  = (anchor - start) / (needed || 1);
-  const nowSec = Math.floor(Date.now() / 1000);
   let price = start;
   const sim: OHLCPoint[] = [];
   for (let i = 0; i < needed; i++) {
@@ -281,7 +286,8 @@ function buildCandleHistory(currentPrice: number, change24h: number, realCandles
     const close = open + trend + (Math.random() - 0.47) * currentPrice * vol;
     const high  = Math.max(open, close) + Math.random() * currentPrice * vol * 0.4;
     const low   = Math.min(open, close) - Math.random() * currentPrice * vol * 0.4;
-    const ts    = nowSec - (needed - i) * interval * 60;
+    // i === needed-1 gets latestCandleTime so live tick matches exactly
+    const ts    = latestCandleTime - (needed - 1 - i) * intervalSec;
     sim.push({ time: ts, label: '', open: +open.toFixed(2), close: +close.toFixed(2), high: +high.toFixed(2), low: +low.toFixed(2), volume: +(Math.abs(close-open)/Math.abs(open||1)*1e6*(0.3+Math.random())).toFixed(0) });
     price = close;
   }
