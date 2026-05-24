@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_URL } from '../config';
+import { useTranslation } from '../i18n/TranslationContext';
 
 interface AgentStat {
   name: string;
@@ -47,6 +48,7 @@ function useCountUpF(target: number, decimals = 2, duration = 1000) {
 }
 
 export default function AlphaScorecard() {
+  const { t } = useTranslation();
   const [data, setData] = useState<AlphaData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +73,7 @@ export default function AlphaScorecard() {
     return (
       <div className="panel mono-text" style={{ padding: '0.65rem', display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00e87a', animation: 'pulse 1s infinite' }} />
-        <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Loading Alpha Scorecard...</span>
+        <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>{t('as_loading')}</span>
       </div>
     );
   }
@@ -100,7 +102,7 @@ export default function AlphaScorecard() {
 
       {/* ── Alpha Number (hero) ── */}
       <div style={{ textAlign: 'center', padding: '0.5rem 0.25rem 0.3rem', background: `${alphaColor}08`, border: `1px solid ${alphaColor}20`, borderRadius: 7 }}>
-        <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Alpha Generated vs BTC Baseline</div>
+        <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>{t('as_vs_btc')}</div>
         <div style={{ fontSize: '2.2rem', fontWeight: 900, color: alphaColor, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1, letterSpacing: '-1px' }}>
           {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}%
         </div>
@@ -127,7 +129,7 @@ export default function AlphaScorecard() {
           <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f7931a', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>
             {btcRet >= 0 ? '+' : ''}{btcRet.toFixed(2)}%
           </div>
-          <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 1 }}>24h buy & hold</div>
+          <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 1 }}>{t('as_buy_hold')}</div>
         </div>
       </div>
 
@@ -148,7 +150,7 @@ export default function AlphaScorecard() {
       {/* ── Agent Leaderboard ── */}
       {agents.length > 0 && (
         <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5, padding: '0.35rem 0.4rem' }}>
-          <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', marginBottom: '0.35rem', textTransform: 'uppercase' }}>Agent Performance</div>
+          <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', marginBottom: '0.35rem', textTransform: 'uppercase' }}>{t('as_agent_perf')}</div>
           {agents.map((a, i) => {
             const barPct = (Math.abs(a.pnl_usd) / maxAgentPnl) * 100;
             const c = a.pnl_usd >= 0 ? '#00e87a' : '#ff3366';
@@ -184,7 +186,7 @@ export default function AlphaScorecard() {
         onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)')}
         onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(167,139,250,0.25)')}
       >
-        ⛓ Verify on Mantle Explorer — {data.verified_onchain} ERC-8004 proofs
+        ⛓ {t('as_verify')} — {data.verified_onchain} ERC-8004 proofs
       </a>
     </div>
   );

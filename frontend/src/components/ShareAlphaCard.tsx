@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../config';
+import { useTranslation } from '../i18n/TranslationContext';
 
 interface AlphaData {
   alpha_pct: number;
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function ShareAlphaCard({ onClose }: Props) {
+  const { t } = useTranslation();
   const [data, setData] = useState<AlphaData | null>(null);
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -148,7 +150,7 @@ export default function ShareAlphaCard({ onClose }: Props) {
               </div>
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.25)', fontSize: '0.62rem' }}>Loading alpha data...</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.25)', fontSize: '0.62rem' }}>{t('share_loading')}</div>
           )}
 
           {/* Footer */}
@@ -176,7 +178,7 @@ export default function ShareAlphaCard({ onClose }: Props) {
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,232,122,0.16)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,232,122,0.08)'; }}
           >
-            {copied ? '✓ COPIED!' : '📋 COPY ALPHA REPORT'}
+            {copied ? '✓ COPIED!' : t('share_copy')}
           </button>
           <button
             onClick={onClose}
@@ -186,12 +188,12 @@ export default function ShareAlphaCard({ onClose }: Props) {
               cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
             }}
           >
-            CLOSE
+            {t('share_close')}
           </button>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)' }}>
-          Screenshot this card to share on Twitter / Telegram
+          {t('share_hint')}
         </div>
       </div>
     </div>

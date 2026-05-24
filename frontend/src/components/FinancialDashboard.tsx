@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_URL } from '../config';
+import { useTranslation } from '../i18n/TranslationContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -642,6 +643,7 @@ function MultiAssetTab() {
 // ── On-Chain Decision Timeline ─────────────────────────────────────────────────
 
 function TimelineTab() {
+  const { t } = useTranslation();
   const [data, setData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -680,7 +682,7 @@ function TimelineTab() {
       {/* Timeline events */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
         {events.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.62rem', padding: '2rem' }}>No decisions recorded yet</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.62rem', padding: '2rem' }}>{t('fd_no_decisions')}</div>
         )}
         {events.map(ev => (
           <div key={ev.id} style={{
@@ -737,6 +739,7 @@ function TimelineTab() {
 // ── Live Alerts Feed ───────────────────────────────────────────────────────────
 
 function AlertsTab() {
+  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -766,7 +769,7 @@ function AlertsTab() {
 
       {alerts.length === 0 && (
         <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.62rem', padding: '2.5rem 1rem' }}>
-          <div style={{ marginBottom: 6 }}>No recent alerts</div>
+          <div style={{ marginBottom: 6 }}>{t('fd_no_alerts')}</div>
           <div style={{ fontSize: '0.54rem', color: 'var(--text-muted)' }}>Whale detector + anomaly scanner running in background</div>
         </div>
       )}
@@ -800,17 +803,19 @@ function AlertsTab() {
 // ── Shared UI atoms ────────────────────────────────────────────────────────────
 
 function Spinner() {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120, color: '#a78bfa', fontSize: '0.7rem' }}>
-      <span style={{ animation: 'pulse 1s infinite' }}>Loading...</span>
+      <span style={{ animation: 'pulse 1s infinite' }}>{t('wallet_loading')}</span>
     </div>
   );
 }
 
 function ErrorMsg() {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 80, color: '#ff3366', fontSize: '0.65rem' }}>
-      Failed to load — check backend connection
+      {t('fd_error')}
     </div>
   );
 }
@@ -819,21 +824,22 @@ function ErrorMsg() {
 
 type TabId = 'report' | 'budget' | 'risk' | 'treasury' | 'audit' | 'multiasset' | 'timeline' | 'alerts';
 
-const TABS: { id: TabId; label: string; icon: string; color: string }[] = [
-  { id: 'report',     label: 'P&L Report',  icon: '📊', color: '#00d4ff'  },
-  { id: 'budget',     label: 'Budget',      icon: '💰', color: '#a78bfa'  },
-  { id: 'risk',       label: 'Risk Model',  icon: '⚠',  color: '#f59e0b'  },
-  { id: 'treasury',   label: 'Treasury',    icon: '🏦', color: '#00e87a'  },
-  { id: 'audit',      label: 'Audit Trail', icon: '📋', color: '#a78bfa'  },
-  { id: 'multiasset', label: 'Multi-Asset', icon: '🌍', color: '#f7931a'  },
-  { id: 'timeline',   label: 'Timeline',    icon: '⛓',  color: '#f7931a'  },
-  { id: 'alerts',     label: 'Alerts',      icon: '🔔', color: '#ff3366'  },
-];
-
 interface Props { onClose: () => void }
 
 export default function FinancialDashboard({ onClose }: Props) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>('report');
+
+  const TABS: { id: TabId; label: string; icon: string; color: string }[] = [
+    { id: 'report',     label: t('fd_tab_report'),     icon: '📊', color: '#00d4ff'  },
+    { id: 'budget',     label: t('fd_tab_budget'),     icon: '💰', color: '#a78bfa'  },
+    { id: 'risk',       label: t('fd_tab_risk'),       icon: '⚠',  color: '#f59e0b'  },
+    { id: 'treasury',   label: t('fd_tab_treasury'),   icon: '🏦', color: '#00e87a'  },
+    { id: 'audit',      label: t('fd_tab_audit'),      icon: '📋', color: '#a78bfa'  },
+    { id: 'multiasset', label: t('fd_tab_multiasset'), icon: '🌍', color: '#f7931a'  },
+    { id: 'timeline',   label: t('fd_tab_timeline'),   icon: '⛓',  color: '#f7931a'  },
+    { id: 'alerts',     label: t('fd_tab_alerts'),     icon: '🔔', color: '#ff3366'  },
+  ];
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -901,8 +907,8 @@ export default function FinancialDashboard({ onClose }: Props) {
 
         {/* Footer */}
         <div style={{ padding: '0.45rem 1rem', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: '0.52rem', color: 'var(--text-dim)' }}>Powered by SoeClaw AI CFO × Mantle ERC-8004 × Byreal Skills</span>
-          <span style={{ fontSize: '0.52rem', color: 'var(--text-dim)' }}>Live data — refreshes on open</span>
+          <span style={{ fontSize: '0.52rem', color: 'var(--text-dim)' }}>{t('fd_powered')}</span>
+          <span style={{ fontSize: '0.52rem', color: 'var(--text-dim)' }}>{t('fd_live_data')}</span>
         </div>
       </div>
     </div>

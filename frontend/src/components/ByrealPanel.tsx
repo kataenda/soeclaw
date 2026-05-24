@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../i18n/TranslationContext';
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -39,6 +40,7 @@ const REALCLAW_SKILLS = [
 ];
 
 export default function ByrealPanel() {
+  const { t } = useTranslation();
   const [overview, setOverview] = useState<ByrealOverview | null>(null);
   const [signals,  setSignals]  = useState<PerpSignal[]>([]);
   const [error,    setError]    = useState(false);
@@ -108,7 +110,7 @@ export default function ByrealPanel() {
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.5rem 0' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f7931a', animation: 'pulse 1.5s infinite' }} />
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Connecting to Byreal...</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t('bp_connecting')}</span>
           </div>
         )}
 
@@ -178,7 +180,7 @@ export default function ByrealPanel() {
 
             {/* LP positions */}
             <div style={{ flexShrink: 0 }}>
-              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>LP Positions (CLMM)</div>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{t('bp_lp_positions')}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {MOCK_LP.map(lp => (
                   <div key={lp.pool} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.025)', border: `1px solid ${lp.status === 'in-range' ? 'rgba(0,232,122,0.15)' : 'rgba(255,51,102,0.15)'}`, borderRadius: 5, padding: '0.3rem 0.4rem' }}>
@@ -197,7 +199,7 @@ export default function ByrealPanel() {
 
             {/* Recent swaps */}
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Recent Agent Swaps</div>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{t('bp_recent_swaps')}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto', maxHeight: '100%' }}>
                 {MOCK_SWAPS.map((sw, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 5, padding: '0.3rem 0.4rem', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -246,7 +248,7 @@ export default function ByrealPanel() {
 
             {/* Skills list */}
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Installed Skills</div>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{t('bp_installed_skills')}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto', maxHeight: '100%' }}>
                 {REALCLAW_SKILLS.map(sk => (
                   <div key={sk.skill} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(167,139,250,0.1)', borderLeft: '3px solid rgba(167,139,250,0.4)', borderRadius: 5, padding: '0.3rem 0.4rem' }}>

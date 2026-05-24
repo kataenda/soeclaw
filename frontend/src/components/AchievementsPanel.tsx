@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from '../i18n/TranslationContext';
 
 interface Achievement {
   id: string;
@@ -25,6 +26,7 @@ interface EconomyData {
 }
 
 export default function AchievementsPanel() {
+  const { t } = useTranslation();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [economy, setEconomy] = useState<EconomyData | null>(null);
   const [activeTab, setActiveTab] = useState<'badges' | 'economy'>('badges');
@@ -78,7 +80,7 @@ export default function AchievementsPanel() {
                 color: activeTab === tab ? '#00d4ff' : undefined,
               }}
             >
-              {tab === 'badges' ? '🏆 BADGES' : '💰 ECONOMY'}
+              {tab === 'badges' ? t('ach_badges_tab') : t('ach_economy_tab')}
             </button>
           ))}
         </div>
@@ -96,7 +98,7 @@ export default function AchievementsPanel() {
               onClick={handleShare}
               style={{ fontSize: '0.72rem', background: copied ? 'rgba(0,255,136,0.15)' : undefined, borderColor: copied ? '#00ff88' : undefined, color: copied ? '#00ff88' : undefined }}
             >
-              {copied ? '✓ COPIED!' : '📤 SHARE'}
+              {copied ? t('share_copied') : t('ach_share')}
             </button>
           </div>
 
@@ -133,7 +135,7 @@ export default function AchievementsPanel() {
           </div>
 
           {achievements.length === 0 && (
-            <p className="mono-text text-muted" style={{ fontSize: '0.75rem', textAlign: 'center', padding: '1rem' }}>No achievements data yet.</p>
+            <p className="mono-text text-muted" style={{ fontSize: '0.75rem', textAlign: 'center', padding: '1rem' }}>{t('ach_no_data')}</p>
           )}
         </>
       )}
@@ -142,7 +144,7 @@ export default function AchievementsPanel() {
       {activeTab === 'economy' && economy && (
         <>
           <div style={{ background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '6px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem' }}>
-            <div className="mono-text text-muted" style={{ fontSize: '0.6rem' }}>TOTAL MNT IN SYSTEM</div>
+            <div className="mono-text text-muted" style={{ fontSize: '0.6rem' }}>{t('economy_total_mnt')}</div>
             <div className="mono-text text-cyan" style={{ fontSize: '1.2rem', fontWeight: 700 }}>{economy.total_mnt_in_system.toLocaleString()} MNT</div>
           </div>
 
@@ -154,8 +156,8 @@ export default function AchievementsPanel() {
                   <span className="mono-text" style={{ color: '#00ff88', fontSize: '0.8rem' }}>{agent.virtual_balance_mnt.toLocaleString()} MNT</span>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span className="mono-text text-muted" style={{ fontSize: '0.65rem' }}>{agent.trade_count} trades</span>
-                  <span className="mono-text" style={{ fontSize: '0.65rem', color: agent.win_rate_pct >= 50 ? '#00ff88' : '#ff3366' }}>{agent.win_rate_pct.toFixed(1)}% WR</span>
+                  <span className="mono-text text-muted" style={{ fontSize: '0.65rem' }}>{agent.trade_count} {t('economy_trades')}</span>
+                  <span className="mono-text" style={{ fontSize: '0.65rem', color: agent.win_rate_pct >= 50 ? '#00ff88' : '#ff3366' }}>{agent.win_rate_pct.toFixed(1)}% {t('economy_wr')}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
                   {agent.skills.map(skill => (
@@ -180,7 +182,7 @@ export default function AchievementsPanel() {
       )}
 
       {activeTab === 'economy' && !economy && (
-        <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>Loading economy data...</p>
+        <p className="mono-text text-muted" style={{ fontSize: '0.75rem' }}>{t('ach_loading_economy')}</p>
       )}
     </div>
   );

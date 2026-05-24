@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { API_URL, MANTLE_NETWORK } from '../config';
+import { useTranslation } from '../i18n/TranslationContext';
 
 interface Props {
   onConnect: (address: string, balanceMnt: number, greeting: string) => void;
@@ -47,6 +48,7 @@ function detectWallets(): WalletOption[] {
 }
 
 export default function WalletConnect({ onConnect, onDisconnect }: Props) {
+  const { t } = useTranslation();
   const [address, setAddress]       = useState('');
   const [showModal, setShowModal]   = useState(false);
   const [connecting, setConnecting] = useState('');
@@ -88,7 +90,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: Props) {
         </span>
         <button
           onClick={() => { setAddress(''); setWallets(detectWallets()); onDisconnect?.(); }}
-          title="Disconnect wallet"
+          title={t('wc_connect_btn')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,51,102,0.5)', fontSize: '0.6rem', padding: '0 1px', lineHeight: 1, marginLeft: 1 }}
           onMouseEnter={e => (e.currentTarget.style.color = '#ff3366')}
           onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,51,102,0.5)')}
@@ -109,7 +111,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: Props) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#e0e6f0', fontFamily: 'JetBrains Mono, monospace' }}>Connect Wallet</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#e0e6f0', fontFamily: 'JetBrains Mono, monospace' }}>{t('wc_connect_btn').replace('🔗 ', '')}</div>
             <div style={{ fontSize: '0.62rem', color: '#6b7fa3', marginTop: 2 }}>{MANTLE_NETWORK.displayName}</div>
           </div>
           <button onClick={() => setShowModal(false)}
@@ -138,19 +140,18 @@ export default function WalletConnect({ onConnect, onDisconnect }: Props) {
                 <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>{w.icon}</span>
                 <span style={{ flex: 1 }}>{w.name}</span>
                 {connecting === w.name
-                  ? <span style={{ fontSize: '0.6rem', color: '#00d4ff' }}>Connecting…</span>
+                  ? <span style={{ fontSize: '0.6rem', color: '#00d4ff' }}>{t('wc_connecting')}</span>
                   : <span style={{ fontSize: '0.65rem', color: '#3d5070' }}>→</span>
                 }
               </button>
             ))}
           </div>
         ) : (
-          /* No wallet installed */
           <div>
             <div style={{ padding: '0.75rem', background: 'rgba(255,51,102,0.06)', border: '1px solid rgba(255,51,102,0.15)', borderRadius: 8, marginBottom: '1rem', fontSize: '0.7rem', color: '#ff6680', lineHeight: 1.6 }}>
-              No wallet extension detected in your browser.
+              {t('wc_no_wallet')}
             </div>
-            <div style={{ fontSize: '0.65rem', color: '#6b7fa3', marginBottom: '0.65rem' }}>Install one to continue:</div>
+            <div style={{ fontSize: '0.65rem', color: '#6b7fa3', marginBottom: '0.65rem' }}>{t('wc_install')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {INSTALL_LINKS.map(w => (
                 <a key={w.name} href={w.url} target="_blank" rel="noopener noreferrer"
@@ -171,7 +172,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: Props) {
         )}
 
         <div style={{ marginTop: '1rem', fontSize: '0.58rem', color: '#3d5070', textAlign: 'center', lineHeight: 1.5 }}>
-          By connecting you agree to use {MANTLE_NETWORK.displayName}
+          {t('wc_agree')} {MANTLE_NETWORK.displayName}
         </div>
       </div>
     </div>,
@@ -186,7 +187,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: Props) {
         onClick={() => setShowModal(true)}
         style={{ fontSize: '0.55rem', padding: '0.15rem 0.45rem', borderColor: 'rgba(0,212,255,0.4)', color: '#00d4ff' }}
       >
-        🔗 Connect
+        {t('wc_connect_btn')}
       </button>
     </>
   );

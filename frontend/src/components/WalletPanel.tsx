@@ -49,7 +49,7 @@ const WalletPanel: React.FC<Props> = ({ onConnect, onDisconnect }) => {
 
       {!userWallet ? (
         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>
-          Connect wallet to view balance & run AI actions
+          {t('wp_connect_hint')}
         </div>
       ) : (
         <>
