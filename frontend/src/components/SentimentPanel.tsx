@@ -122,7 +122,7 @@ export default function SentimentPanel() {
         <div>
           <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Fear & Greed Index</div>
           <div style={{ fontSize: '0.88rem', fontWeight: 700, color: fg.color, marginTop: 2, lineHeight: 1 }}>{fg.label}</div>
-          <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{ai_read}</div>
+          <div style={{ fontSize: '0.52rem', color: '#00e87a', marginTop: 3, lineHeight: 1.4 }}>{ai_read}</div>
         </div>
       </div>
 
