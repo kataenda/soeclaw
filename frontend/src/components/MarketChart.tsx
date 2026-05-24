@@ -772,12 +772,11 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   const realCandles = useMemo(() => generateCandles(history), [history]);
 
   const candles = useMemo(() => {
-    if (baseCandles.length === 0) return realCandles.slice(-200);
-    const seen = new Set<number>();
-    return [...baseCandles, ...realCandles]
-      .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
-      .sort((a, b) => a.time - b.time)
-      .slice(-200);
+    // When baseCandles exist, use them exclusively — realCandles have 5-second timestamps
+    // that conflict with the TF-aligned grid, causing the live-tick to place the current
+    // price on a separate out-of-grid candle far from the historical candles.
+    if (baseCandles.length > 0) return baseCandles.slice(-200);
+    return realCandles.slice(-200);
   }, [baseCandles, realCandles]);
 
   const formatPrice = (p: number) => {
