@@ -104,7 +104,7 @@ const WalletPanel: React.FC<Props> = ({ onConnect, onDisconnect }) => {
       <TxApprovalModal
         tx={pendingTx}
         walletAddress={userWallet.address}
-        onClose={() => { setPendingTx(null); setAiDecision(null); }}
+        onClose={() => { setPendingTx(null); setAiPreview(null); }}
         onSuccess={(hash) => {
           setPendingTx(null);
           setActionSuccess(`✅ requestAI() sent! ${hash.slice(0, 10)}… — oracle processing…`);
