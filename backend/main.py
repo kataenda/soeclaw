@@ -2453,10 +2453,35 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     regime = "RISK_ON" if btc_c >= 3 else "RISK_OFF" if btc_c <= -3 else "NEUTRAL"
 
     recent_trades = db.query(models.Trade).order_by(models.Trade.created_at.desc()).limit(8).all()
+    all_trades    = db.query(models.Trade).all()
     trade_lines = [
         f"  • Agent#{t.agent_id}: {t.action} {t.symbol} @ ${t.price:,.2f} (pnl: ${t.pnl:+.2f})"
         for t in recent_trades
     ] if recent_trades else ["  • No recent trades"]
+
+    # Portfolio stats
+    total_trades = len(all_trades)
+    total_pnl    = sum(t.pnl for t in all_trades)
+    wins         = sum(1 for t in all_trades if t.pnl > 0)
+    losses       = sum(1 for t in all_trades if t.pnl < 0)
+    win_rate     = round(wins / total_trades * 100, 1) if total_trades > 0 else 0
+    best_trade   = max(all_trades, key=lambda t: t.pnl, default=None)
+    worst_trade  = min(all_trades, key=lambda t: t.pnl, default=None)
+    open_pos     = [t for t in all_trades if t.action in ("BUY",) and t.pnl == 0]
+
+    # MNT balance from chain
+    mnt_balance = 0.0
+    try:
+        from blockchain.mantle_client import MantleClient
+        _mc = MantleClient()
+        if _mc.connected:
+            from web3 import Web3
+            _pk2 = os.getenv("PRIVATE_KEY", "")
+            _addr = Web3().eth.account.from_key(_pk2).address if _pk2 else None
+            if _addr:
+                mnt_balance = round(_mc.w3.eth.get_balance(Web3.to_checksum_address(_addr)) / 1e18, 4)
+    except Exception:
+        pass
 
     settings = db.query(models.CFOSettings).first()
     capital  = settings.capital_usd if settings else 10000
@@ -2495,8 +2520,18 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
             f"COOK/USDT: ${cook_p:>12,.6f}  (Byreal governance)\n"
             f"Market Regime: {regime}\n\n"
             f"=== PORTFOLIO ===\n"
-            f"Capital     : ${capital:,.2f}\n"
-            f"Risk Profile: {profile.upper()}\n\n"
+            f"Capital      : ${capital:,.2f}\n"
+            f"Risk Profile : {profile.upper()}\n"
+            f"MNT Balance  : {mnt_balance} MNT (Mantle Sepolia)\n"
+            f"Agent Status : {'RUNNING' if agent_running else 'STOPPED'}\n\n"
+            f"=== PORTFOLIO PERFORMANCE ===\n"
+            f"Total Trades : {total_trades}\n"
+            f"Win / Loss   : {wins}W / {losses}L\n"
+            f"Win Rate     : {win_rate}%\n"
+            f"Total PnL    : ${total_pnl:+,.2f}\n"
+            f"Best Trade   : {f'${best_trade.pnl:+,.2f} ({best_trade.action} {best_trade.symbol})' if best_trade else 'N/A'}\n"
+            f"Worst Trade  : {f'${worst_trade.pnl:+,.2f} ({worst_trade.action} {worst_trade.symbol})' if worst_trade else 'N/A'}\n"
+            f"Open Positions: {len(open_pos)}\n\n"
             f"=== RECENT AI AGENT TRADES ===\n"
             + "\n".join(trade_lines) +
             "\n\n=== SOECLAW APP — FITUR & PANDUAN ===\n"
