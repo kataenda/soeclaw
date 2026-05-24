@@ -1,9 +1,13 @@
 """
 Byreal SDK integration — wraps @byreal-io/byreal-cli and @byreal-io/byreal-perps-cli
 via subprocess calls. Returns structured JSON for AI agent consumption.
+
+RealClaw swap: set REALCLAW_MODE=true in .env when invitation code is received.
+All public functions remain the same — only the underlying CLI changes.
 """
 import asyncio
 import json
+import os
 import shlex
 import subprocess
 import shutil
@@ -13,6 +17,11 @@ from typing import Any
 _NPX = shutil.which("npx") or "npx"
 _BYREAL_CMD  = f'"{_NPX}" @byreal-io/byreal-cli'
 _PERPS_CMD   = f'"{_NPX}" @byreal-io/byreal-perps-cli'
+
+# RealClaw mode — swap CLI when invitation code received
+# Set REALCLAW_MODE=true in .env and install @byreal-io/realclaw
+_REALCLAW_MODE = os.getenv("REALCLAW_MODE", "false").lower() == "true"
+_REALCLAW_CMD  = f'"{_NPX}" @byreal-io/realclaw'
 
 
 def _run_sync(cmd: str) -> dict[str, Any]:
@@ -35,32 +44,37 @@ async def _run(cmd: str) -> dict[str, Any]:
     return await asyncio.to_thread(_run_sync, cmd)
 
 
+def _dex_cmd() -> str:
+    """Returns the active DEX CLI command (Byreal or RealClaw)."""
+    return _REALCLAW_CMD if _REALCLAW_MODE else _BYREAL_CMD
+
+
 # ── Byreal DEX (CLMM / Spot) ─────────────────────────────────────────────────
 
 async def get_dex_overview() -> dict:
-    return await _run(f"{_BYREAL_CMD} overview -o json --non-interactive")
+    return await _run(f"{_dex_cmd()} overview -o json --non-interactive")
 
 
 async def get_pools(limit: int = 20) -> dict:
-    return await _run(f"{_BYREAL_CMD} pools list -o json --non-interactive")
+    return await _run(f"{_dex_cmd()} pools list -o json --non-interactive")
 
 
 async def search_pools(query: str) -> dict:
-    return await _run(f"{_BYREAL_CMD} pools search {shlex.quote(query)} -o json --non-interactive")
+    return await _run(f"{_dex_cmd()} pools search {shlex.quote(query)} -o json --non-interactive")
 
 
 async def get_tokens() -> dict:
-    return await _run(f"{_BYREAL_CMD} tokens list -o json --non-interactive")
+    return await _run(f"{_dex_cmd()} tokens list -o json --non-interactive")
 
 
 async def get_swap_preview(from_token: str, to_token: str, amount: float) -> dict:
     return await _run(
-        f"{_BYREAL_CMD} swap preview {from_token} {to_token} {amount} -o json --non-interactive"
+        f"{_dex_cmd()} swap preview {from_token} {to_token} {amount} -o json --non-interactive"
     )
 
 
 async def get_positions() -> dict:
-    return await _run(f"{_BYREAL_CMD} positions list -o json --non-interactive")
+    return await _run(f"{_dex_cmd()} positions list -o json --non-interactive")
 
 
 # ── Byreal Perps ─────────────────────────────────────────────────────────────
