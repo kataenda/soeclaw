@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { API_URL } from '../config';
+import { API_URL, MANTLE_NETWORK } from '../config';
 
 interface Props {
   onLogin: (token: string, username: string) => void;
@@ -190,7 +190,7 @@ const LoginPage: React.FC<Props> = ({ onLogin }) => {
         </form>
 
         <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '1.5rem' }}>
-          SoeClaw OS v1.0.0 — Mantle Sepolia Testnet
+          SoeClaw OS v1.0.0 — {MANTLE_NETWORK.displayName}
         </p>
       </div>
     </div>

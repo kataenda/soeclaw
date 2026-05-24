@@ -5,8 +5,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-RPC_URL = "https://rpc.sepolia.mantle.xyz"
-CONTRACT_ADDRESS = os.getenv("MANTLE_CONTRACT_ADDRESS", "0x5FbDB2315678afecb367f032d93F642f64180aa3")
+_NETWORK = os.getenv("MANTLE_NETWORK", "sepolia")
+RPC_URL = "https://rpc.mantle.xyz" if _NETWORK == "mainnet" else "https://rpc.sepolia.mantle.xyz"
+CHAIN_ID = 5000 if _NETWORK == "mainnet" else 5003
+EXPLORER_BASE = "https://explorer.mantle.xyz" if _NETWORK == "mainnet" else "https://explorer.sepolia.mantle.xyz"
+
+CONTRACT_ADDRESS = os.getenv("MANTLE_CONTRACT_ADDRESS", "0x95877513429566993C96544B639c87E7c6965a3C")
 IDENTITY_REGISTRY_ADDRESS = os.getenv(
     "IDENTITY_REGISTRY_ADDRESS",
     "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d"
@@ -35,12 +39,74 @@ SOECLAW_ABI = [
         "type": "function"
     },
     {
-        "inputs": [
-            {"internalType": "string", "name": "_agentName", "type": "string"}
-        ],
+        "inputs": [{"internalType": "string", "name": "_agentName", "type": "string"}],
         "name": "triggerAgent",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "string", "name": "_symbol", "type": "string"}],
+        "name": "requestAI",
+        "outputs": [{"internalType": "uint256", "name": "requestId", "type": "uint256"}],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_requestId", "type": "uint256"},
+            {"internalType": "string",  "name": "_action",    "type": "string"},
+            {"internalType": "uint256", "name": "_confidence","type": "uint256"},
+            {"internalType": "string",  "name": "_reasoning", "type": "string"}
+        ],
+        "name": "fulfillAIResult",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "_requestId", "type": "uint256"}],
+        "name": "getAIResult",
+        "outputs": [
+            {"internalType": "string",  "name": "action",      "type": "string"},
+            {"internalType": "uint256", "name": "confidence",   "type": "uint256"},
+            {"internalType": "string",  "name": "reasoning",    "type": "string"},
+            {"internalType": "bool",    "name": "fulfilled",    "type": "bool"},
+            {"internalType": "uint256", "name": "fulfilledAt",  "type": "uint256"},
+            {"internalType": "address", "name": "caller",       "type": "address"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True,  "internalType": "uint256", "name": "requestId", "type": "uint256"},
+            {"indexed": True,  "internalType": "address", "name": "caller",    "type": "address"},
+            {"indexed": False, "internalType": "string",  "name": "symbol",    "type": "string"},
+            {"indexed": False, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+        ],
+        "name": "AIRequested",
+        "type": "event"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True,  "internalType": "uint256", "name": "requestId", "type": "uint256"},
+            {"indexed": True,  "internalType": "address", "name": "caller",    "type": "address"},
+            {"indexed": False, "internalType": "string",  "name": "action",    "type": "string"},
+            {"indexed": False, "internalType": "uint256", "name": "confidence","type": "uint256"},
+            {"indexed": False, "internalType": "string",  "name": "reasoning", "type": "string"},
+            {"indexed": False, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+        ],
+        "name": "AIFulfilled",
+        "type": "event"
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
+        "name": "getUserActionCount",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
         "type": "function"
     }
 ]
@@ -120,7 +186,7 @@ class MantleClient:
     def _send_tx(self, fn, account, nonce: int) -> str:
         gas_estimate = fn.estimate_gas({"from": account.address})
         tx = fn.build_transaction({
-            "chainId": 5003,
+            "chainId": CHAIN_ID,
             "gas": int(gas_estimate * 1.2),
             "maxFeePerGas": self.w3.eth.gas_price,
             "maxPriorityFeePerGas": self.w3.to_wei("1", "gwei"),
@@ -215,6 +281,50 @@ class MantleClient:
         except Exception as e:
             print(f"[MantleClient] log_decision error: {e}")
             return f"0x{'0' * 64}_error"
+
+    def fulfill_ai_request(self, request_id: int, action: str, confidence: int, reasoning: str) -> str:
+        """Backend oracle: calls fulfillAIResult() after AI inference."""
+        if not self.connected or not PRIVATE_KEY or not self.contract:
+            return f"0x{'0' * 64}_offline"
+        try:
+            account = self.w3.eth.account.from_key(PRIVATE_KEY)
+            nonce   = self.w3.eth.get_transaction_count(account.address)
+            tx_hash = self._send_tx(
+                self.contract.functions.fulfillAIResult(request_id, action, confidence, reasoning),
+                account, nonce
+            )
+            print(f"[Oracle] fulfillAIResult({request_id}) → {tx_hash}")
+            return tx_hash
+        except Exception as e:
+            print(f"[Oracle] fulfillAIResult error: {e}")
+            return f"0x{'0' * 64}_error"
+
+    def get_pending_ai_requests(self, from_block: int = 0) -> list:
+        """Scan for AIRequested events that have not been fulfilled yet."""
+        if not self.connected or not self.contract:
+            return []
+        try:
+            event = self.contract.events.AIRequested
+            logs  = event.get_logs(from_block=from_block)
+            pending = []
+            for log in logs:
+                rid = log["args"]["requestId"]
+                try:
+                    result = self.contract.functions.getAIResult(rid).call()
+                    fulfilled = result[3]
+                except Exception:
+                    fulfilled = False
+                if not fulfilled:
+                    pending.append({
+                        "request_id": rid,
+                        "caller":     log["args"]["caller"],
+                        "symbol":     log["args"]["symbol"],
+                        "block":      log["blockNumber"],
+                    })
+            return pending
+        except Exception as e:
+            print(f"[Oracle] get_pending_ai_requests error: {e}")
+            return []
 
     def get_agent_stats(self, agent_name: str) -> dict:
         """Returns on-chain trade count and reputation for an agent."""

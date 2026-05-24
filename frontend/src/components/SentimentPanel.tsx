@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_URL } from '../config';
+import { useTranslation } from '../i18n/TranslationContext';
 
 interface Signal {
   label: string;
@@ -70,6 +71,7 @@ const REGIME_CFG: Record<string, { label: string; color: string }> = {
 };
 
 export default function SentimentPanel() {
+  const { t } = useTranslation();
   const [data, setData] = useState<SentimentData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -89,7 +91,7 @@ export default function SentimentPanel() {
     return (
       <div className="panel mono-text" style={{ padding: '0.65rem', display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', animation: 'pulse 1s infinite' }} />
-        <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Loading Sentiment...</span>
+        <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>{t('sentiment_loading')}</span>
       </div>
     );
   }
@@ -107,7 +109,7 @@ export default function SentimentPanel() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: fg.color, boxShadow: `0 0 8px ${fg.color}`, flexShrink: 0 }} />
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: fg.color }}>SENTIMENT INTEL</span>
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: fg.color }}>{t('sentiment_title')}</span>
         </div>
         <span style={{ fontSize: '0.54rem', padding: '1px 6px', borderRadius: 4, fontWeight: 700, background: `${rc.color}15`, border: `1px solid ${rc.color}40`, color: rc.color }}>
           {rc.label}
@@ -120,7 +122,7 @@ export default function SentimentPanel() {
           <GaugeArc score={fg.score} color={fg.color} />
         </div>
         <div>
-          <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Fear & Greed Index</div>
+          <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('sentiment_fg')}</div>
           <div style={{ fontSize: '0.88rem', fontWeight: 700, color: fg.color, marginTop: 2, lineHeight: 1 }}>{fg.label}</div>
           <div style={{ fontSize: '0.52rem', color: '#00e87a', marginTop: 3, lineHeight: 1.4 }}>{ai_read}</div>
         </div>
@@ -129,19 +131,19 @@ export default function SentimentPanel() {
       {/* Whale + Social row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem' }}>
         <div style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: 5, padding: '0.3rem 0.4rem' }}>
-          <div style={{ fontSize: '0.5rem', color: '#00d4ff', fontWeight: 700, letterSpacing: '0.4px', marginBottom: 2 }}>🐳 WHALE SIGNAL</div>
+          <div style={{ fontSize: '0.5rem', color: '#00d4ff', fontWeight: 700, letterSpacing: '0.4px', marginBottom: 2 }}>{t('sentiment_whale')}</div>
           <div style={{ fontSize: '0.76rem', fontWeight: 700, color: whale.direction === 'ACCUMULATION' ? '#00e87a' : whale.direction === 'DISTRIBUTION' ? '#ff3366' : '#f59e0b', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>
             {whale.direction}
           </div>
-          <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', marginTop: 2 }}>{whale.alert_count} alerts detected</div>
+          <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', marginTop: 2 }}>{whale.alert_count} {t('sentiment_alerts')}</div>
         </div>
         <div style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.15)', borderRadius: 5, padding: '0.3rem 0.4rem' }}>
-          <div style={{ fontSize: '0.5rem', color: '#a78bfa', fontWeight: 700, letterSpacing: '0.4px', marginBottom: 2 }}>📡 SOCIAL VOLUME</div>
+          <div style={{ fontSize: '0.5rem', color: '#a78bfa', fontWeight: 700, letterSpacing: '0.4px', marginBottom: 2 }}>{t('sentiment_social')}</div>
           <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#a78bfa', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>
             {social.trend}
           </div>
           <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            {social.volume >= 1000 ? `${(social.volume / 1000).toFixed(0)}K` : social.volume} mentions/hr
+            {social.volume >= 1000 ? `${(social.volume / 1000).toFixed(0)}K` : social.volume} {t('sentiment_mentions')}
           </div>
         </div>
       </div>
@@ -149,7 +151,7 @@ export default function SentimentPanel() {
       {/* Signals */}
       {signals_safe.length > 0 && (
         <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5, padding: '0.3rem 0.4rem' }}>
-          <div style={{ fontSize: '0.5rem', color: 'var(--text-dim)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Signal Breakdown</div>
+          <div style={{ fontSize: '0.5rem', color: 'var(--text-dim)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '0.3rem' }}>{t('sentiment_signals_title')}</div>
           {signals_safe.map((s, i) => {
             const c = SIGNAL_COLOR[s.type] ?? '#6b7fa3';
             return (

@@ -53,6 +53,9 @@ function App() {
   const [newTxHash, setNewTxHash]           = useState<string | null>(null);
   const [showFinancial, setShowFinancial]   = useState(false);
   const [showShareCard, setShowShareCard]   = useState(false);
+  const [walletAddress, setWalletAddress]   = useState('');
+  const [walletBalanceMnt, setWalletBalanceMnt] = useState(0);
+  const [walletGreeting, setWalletGreeting] = useState('');
   const [prices, setPrices]       = useState<Prices>({
     'BTC/USDT':  { price: 0, change_24h: 0 },
     'ETH/USDT':  { price: 0, change_24h: 0 },
@@ -234,7 +237,18 @@ function App() {
 
         {/* Left Sidebar */}
         <div className={`sidebar-left${mobileTab === 'agents' ? ' tab-active' : ''}`} role="complementary" aria-label="Agent wallet and thought stream">
-          <WalletPanel />
+          <WalletPanel
+            onConnect={(addr, bal, greeting) => {
+              setWalletAddress(addr);
+              setWalletBalanceMnt(bal);
+              setWalletGreeting(greeting);
+            }}
+            onDisconnect={() => {
+              setWalletAddress('');
+              setWalletBalanceMnt(0);
+              setWalletGreeting('');
+            }}
+          />
           <AlphaScorecard />
         </div>
 
@@ -253,7 +267,11 @@ function App() {
         {/* Right Sidebar */}
         <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI CFO">
           <SentimentPanel />
-          <CFOPanel />
+          <CFOPanel
+            walletAddress={walletAddress}
+            walletBalanceMnt={walletBalanceMnt}
+            walletGreeting={walletGreeting}
+          />
         </div>
 
         {/* Bottom Panel — AI Thought Stream + SOECLAW Insights */}

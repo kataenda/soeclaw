@@ -1,11 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_URL } from '../config';
+import { useTranslation } from '../i18n/TranslationContext';
+import TxApprovalModal from './TxApprovalModal';
+import type { TxData } from './TxApprovalModal';
 
 interface ChatMsg { role: 'user' | 'ai'; text: string; powered?: boolean }
 
-export default function CFOPanel() {
+interface Props {
+  walletAddress?: string;
+  walletBalanceMnt?: number;
+  walletGreeting?: string;
+}
+
+export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '' }: Props) {
+  const { t } = useTranslation();
   const [aiPowered, setAiPowered] = useState(false);
-  const [msgs,    setMsgs]    = useState<ChatMsg[]>([{ role: 'ai', text: 'Halo! Saya AI CFO SoeClaw.\nTanya saya tentang pasar, strategi, portfolio, atau kondisi market saat ini.' }]);
+  const [msgs,    setMsgs]    = useState<ChatMsg[]>([{ role: 'ai', text: t('cfo_welcome') }]);
+  const [pendingTx, setPendingTx] = useState<TxData | null>(null);
   const [input,   setInput]   = useState('');
   const [loading, setLoading] = useState(false);
   const [health,  setHealth]  = useState<{ health_score: number; regime: string } | null>(null);
@@ -16,6 +27,13 @@ export default function CFOPanel() {
   }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
+
+  // Show AI greeting when wallet connects
+  useEffect(() => {
+    if (!walletGreeting) return;
+    setMsgs(prev => [...prev, { role: 'ai', text: walletGreeting, powered: true }]);
+    setAiPowered(true);
+  }, [walletGreeting]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -32,13 +50,19 @@ export default function CFOPanel() {
       const res = await fetch(`${API_URL}/api/cfo/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({
+          message: text,
+          history,
+          wallet_address: walletAddress,
+          wallet_balance_mnt: walletBalanceMnt,
+        }),
       });
       const data = await res.json();
       if (data.ai === true) setAiPowered(true);
       setMsgs(prev => [...prev, { role: 'ai', text: data.reply, powered: data.ai === true }]);
+      if (data.tx_data) setPendingTx(data.tx_data);
     } catch {
-      setMsgs(prev => [...prev, { role: 'ai', text: 'Backend tidak dapat dijangkau.' }]);
+      setMsgs(prev => [...prev, { role: 'ai', text: t('cfo_unreachable') }]);
     }
     setLoading(false);
   }, [input, loading, msgs]);
@@ -48,9 +72,21 @@ export default function CFOPanel() {
   const regime = health?.regime ?? 'NEUTRAL';
   const regimeColor = regime === 'RISK_OFF' ? '#ff3366' : regime === 'RISK_ON' ? '#00e87a' : '#f59e0b';
 
-  const QUICK = ['Kondisi BTC?', 'Strategi portfolio?', 'Analisis risiko?', 'Status market?'];
+  const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4')];
 
   return (
+    <>
+    {pendingTx && walletAddress && (
+      <TxApprovalModal
+        tx={pendingTx}
+        walletAddress={walletAddress}
+        onClose={() => setPendingTx(null)}
+        onSuccess={(hash) => {
+          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://explorer.sepolia.mantle.xyz/tx/${hash}`, powered: true }]);
+          setPendingTx(null);
+        }}
+      />
+    )}
     <div className="panel mono-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', minHeight: 0 }}>
 
       {/* Header */}
@@ -60,6 +96,11 @@ export default function CFOPanel() {
           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#a78bfa' }}>AI CFO</span>
           {aiPowered && (
             <span style={{ fontSize: '0.5rem', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 3, padding: '1px 4px', color: '#a78bfa', fontWeight: 700 }}>Claude</span>
+          )}
+          {walletAddress && (
+            <span style={{ fontSize: '0.5rem', background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.3)', borderRadius: 3, padding: '1px 4px', color: '#00e87a', fontWeight: 700 }}>
+              {walletAddress.slice(0, 5)}…{walletAddress.slice(-3)}
+            </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -126,7 +167,7 @@ export default function CFOPanel() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
-          placeholder="Tanya AI CFO..."
+          placeholder={t('cfo_placeholder')}
           style={{
             flex: 1, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(167,139,250,0.25)',
             borderRadius: 5, color: '#c0cce0', fontFamily: 'JetBrains Mono, monospace',
@@ -145,5 +186,6 @@ export default function CFOPanel() {
         >→</button>
       </div>
     </div>
+    </>
   );
 }

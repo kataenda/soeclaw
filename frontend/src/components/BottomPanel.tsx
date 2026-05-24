@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from '../i18n/TranslationContext';
 
 /* ── Types ── */
 interface Alert { type: string; symbol: string; title?: string; message: string; severity: string; timestamp: string }
@@ -856,37 +857,38 @@ function BenchmarkTab() {
 
 
 /* ─────────────────────────────── BottomPanel ─────────────────────────── */
-const TABS = [
-  { id: 'alpha',     label: 'Alpha Feed'  },
-  { id: 'rwa',       label: 'RWA Yields'  },
-  { id: 'devtools',  label: 'DevTools'    },
-  { id: 'economy',   label: 'Economy'     },
-  { id: 'benchmark', label: 'On-Chain'    },
-] as const;
-
-type TabId = typeof TABS[number]['id'];
+type TabId = 'alpha' | 'rwa' | 'devtools' | 'economy' | 'benchmark';
 
 export default function BottomPanel() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<TabId>('alpha');
+
+  const TABS: { id: TabId; label: string }[] = [
+    { id: 'alpha',     label: t('tab_alpha')     },
+    { id: 'rwa',       label: t('tab_rwa')       },
+    { id: 'devtools',  label: t('tab_devtools')  },
+    { id: 'economy',   label: t('tab_economy')   },
+    { id: 'benchmark', label: t('tab_benchmark') },
+  ];
 
   return (
     <div className="panel bottom-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-        <h3 className="mono-text text-cyan" style={{ fontSize: '0.78rem', marginRight: '0.25rem' }}>SOECLAW INSIGHTS</h3>
+        <h3 className="mono-text text-cyan" style={{ fontSize: '0.78rem', marginRight: '0.25rem' }}>{t('insights_title')}</h3>
         <div role="tablist" aria-label="Insights sections" style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-          {TABS.map(t => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} aria-controls={`tabpanel-${t.id}`}
-              onClick={() => setTab(t.id)} className="neon-btn"
-              style={{ fontSize: '0.7rem', padding: '0.3rem 0.65rem', background: tab === t.id ? 'rgba(0,212,255,0.14)' : 'transparent', borderColor: tab === t.id ? '#00d4ff' : 'rgba(255,255,255,0.1)', color: tab === t.id ? '#00d4ff' : '#6b7fa3' }}>
-              {t.label}
+          {TABS.map(tb => (
+            <button key={tb.id} role="tab" aria-selected={tab === tb.id} aria-controls={`tabpanel-${tb.id}`}
+              onClick={() => setTab(tb.id)} className="neon-btn"
+              style={{ fontSize: '0.7rem', padding: '0.3rem 0.65rem', background: tab === tb.id ? 'rgba(0,212,255,0.14)' : 'transparent', borderColor: tab === tb.id ? '#00d4ff' : 'rgba(255,255,255,0.1)', color: tab === tb.id ? '#00d4ff' : '#6b7fa3' }}>
+              {tb.label}
             </button>
           ))}
         </div>
       </div>
 
       {/* Content */}
-      <div role="tabpanel" id={`tabpanel-${tab}`} aria-label={TABS.find(t => t.id === tab)?.label} style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+      <div role="tabpanel" id={`tabpanel-${tab}`} aria-label={TABS.find(tb => tb.id === tab)?.label} style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         {tab === 'alpha'     && <AlphaTab />}
         {tab === 'rwa'       && <RWATab />}
         {tab === 'devtools'  && <DevToolsTab />}

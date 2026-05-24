@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'blockchain'))
-from mantle_client import MantleClient
+from mantle_client import MantleClient, EXPLORER_BASE
 
 mantle_client = MantleClient()
 
@@ -64,6 +64,19 @@ AGENT_CONFIGS = [
 ]
 
 models.Base.metadata.create_all(bind=database.engine)
+
+# ── Auto-create default admin user from env vars (survives Railway restarts) ─
+_ADMIN_USER = os.getenv("ADMIN_USERNAME", "")
+_ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "")
+if _ADMIN_USER and _ADMIN_PASS:
+    _db = database.SessionLocal()
+    try:
+        if not _db.query(models.User).filter(models.User.username == _ADMIN_USER).first():
+            _db.add(models.User(username=_ADMIN_USER, email=f"{_ADMIN_USER}@soeclaw.local", hashed_pw=hash_password(_ADMIN_PASS)))
+            _db.commit()
+            print(f"[AUTH] Default admin '{_ADMIN_USER}' created.")
+    finally:
+        _db.close()
 
 app = FastAPI(title="SoeClaw AI Terminal API")
 
@@ -111,6 +124,67 @@ BYBIT_SYMBOL_MAP = {
 }
 
 _bybit_connected = False
+
+
+async def oracle_loop():
+    """
+    AI Oracle: polls for AIRequested events on SoeClaw contract,
+    calls Claude AI, then writes result back via fulfillAIResult().
+    This is the core AI × on-chain integration loop.
+    """
+    _oracle_from_block = 0
+    print("[Oracle] AI oracle loop started")
+    while True:
+        try:
+            pending = await asyncio.to_thread(
+                mantle_client.get_pending_ai_requests, _oracle_from_block
+            )
+            for req in pending:
+                rid    = req["request_id"]
+                symbol = req["symbol"]
+                caller = req["caller"]
+                print(f"[Oracle] Processing request #{rid} — {symbol} from {caller[:8]}…")
+
+                # AI inference
+                price      = price_cache.get(symbol, {}).get("price", 0.0)
+                change_24h = price_cache.get(symbol, {}).get("change_24h", 0.0)
+                action, confidence, reasoning, _ = get_ai_decision(
+                    "SoeClawAI", "momentum and on-chain signal analysis",
+                    symbol, price, change_24h
+                )
+                conf_int = max(0, min(100, int(confidence)))
+
+                # Fulfill on-chain
+                tx_hash = await asyncio.to_thread(
+                    mantle_client.fulfill_ai_request,
+                    rid, action, conf_int, reasoning
+                )
+                explorer = f"{EXPLORER_BASE}/tx/{tx_hash}"
+
+                # Broadcast to dashboard
+                await manager.broadcast({
+                    "type": "THOUGHT",
+                    "data": {
+                        "agent_name": "ORACLE",
+                        "message": (
+                            f"AI request #{rid} fulfilled on-chain — "
+                            f"{action} {symbol} ({conf_int}% confidence) | "
+                            f"requested by {caller[:8]}… | {reasoning}"
+                        ),
+                        "msg_type": "CHAIN",
+                        "tx_hash": tx_hash,
+                        "explorer_url": explorer,
+                    },
+                })
+
+                # advance scan window past this block
+                if req["block"] >= _oracle_from_block:
+                    _oracle_from_block = req["block"]
+
+        except Exception as e:
+            print(f"[Oracle] loop error: {e}")
+
+        await asyncio.sleep(10)   # poll every 10 seconds
 
 
 async def bybit_ws_loop():
@@ -319,7 +393,7 @@ async def rwa_rebalance():
         mantle_client.log_decision_on_chain,
         "RWA_MANAGER", "RWA_PORTFOLIO", action_str, confidence
     )
-    explorer_url = f"https://explorer.sepolia.mantle.xyz/tx/{tx_hash}"
+    explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}"
 
     # Broadcast to dashboard
     await manager.broadcast({
@@ -898,6 +972,157 @@ async def byreal_swap_preview(from_token: str = "SOL", to_token: str = "USDC", a
         return {"success": False, "error": str(e)}
 
 
+# ── Wallet Analysis ──────────────────────────────────────────────────────────
+
+class WalletAnalyzeRequest(BaseModel):
+    address: str
+
+@app.post("/api/wallet/analyze")
+async def analyze_wallet(req: WalletAnalyzeRequest):
+    """AI greeting + portfolio analysis when user connects their wallet."""
+    address = req.address
+    balance_mnt = 0.0
+    token_balances: dict = {}
+
+    # Get MNT balance from Mantle Sepolia
+    try:
+        from web3 import Web3
+        checksummed = Web3.to_checksum_address(address)
+        balance_wei = mantle_client.w3.eth.get_balance(checksummed)
+        balance_mnt = balance_wei / 1e18
+    except Exception:
+        pass
+
+    # Build portfolio context
+    portfolio_ctx = f"MNT: {balance_mnt:.4f}"
+    if balance_mnt == 0:
+        portfolio_ctx += " (testnet — no balance yet)"
+
+    greeting = f"Wallet {address[:6]}...{address[-4:]} connected. Balance: {portfolio_ctx} on Mantle Sepolia."
+
+    if anthropic_client:
+        try:
+            def _call():
+                return anthropic_client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    max_tokens=150,
+                    messages=[{"role": "user", "content": (
+                        f"User just connected their wallet to SoeClaw AI CFO on Mantle Sepolia testnet. "
+                        f"Wallet: {address[:10]}... Balance: {portfolio_ctx}. "
+                        f"Give a short, friendly 2-sentence personalized welcome. "
+                        f"If they have MNT, suggest a specific opportunity (Byreal DEX, mETH staking 6% APY, CLMM liquidity). "
+                        f"If balance is 0, suggest getting testnet MNT from faucet.sepolia.mantle.xyz. "
+                        f"Be direct and specific. No generic greetings."
+                    )}]
+                )
+            resp = await asyncio.to_thread(_call)
+            greeting = resp.content[0].text.strip()
+        except Exception:
+            pass
+
+    return {
+        "greeting": greeting,
+        "balance_mnt": round(balance_mnt, 4),
+        "address": address,
+        "ai": anthropic_client is not None,
+    }
+
+
+# ── Run AI Action ────────────────────────────────────────────────────────────
+
+class RunAIActionRequest(BaseModel):
+    wallet_address: str
+
+@app.post("/api/ai/run-action")
+async def run_ai_action(req: RunAIActionRequest):
+    """
+    Oracle pattern — step 1 (user side):
+    Returns calldata for requestAI(symbol) so the user signs via MetaMask.
+    The backend oracle_loop() then picks up the AIRequested event,
+    runs Claude AI inference, and calls fulfillAIResult() back on-chain.
+    """
+    # Pick symbol with highest absolute 24h move
+    best_symbol = "MNT/USDT"
+    best_abs = 0.0
+    for sym, data in price_cache.items():
+        abs_chg = abs(data.get("change_24h", 0.0))
+        if abs_chg > best_abs:
+            best_abs = abs_chg
+            best_symbol = sym
+
+    price      = price_cache.get(best_symbol, {}).get("price", 0.0)
+    change_24h = price_cache.get(best_symbol, {}).get("change_24h", 0.0)
+
+    # Encode requestAI(symbol) calldata — user's wallet triggers the oracle
+    from mantle_client import SOECLAW_ABI, CONTRACT_ADDRESS as _CONTRACT_ADDR
+    from web3 import Web3 as _Web3
+    calldata = "0x"
+    contract_addr = _CONTRACT_ADDR
+    try:
+        _enc_contract = mantle_client.w3.eth.contract(
+            address=_Web3.to_checksum_address(_CONTRACT_ADDR),
+            abi=SOECLAW_ABI,
+        )
+        calldata = _enc_contract.encodeABI(fn_name="requestAI", args=[best_symbol])
+    except Exception as enc_err:
+        print(f"[RunAIAction] calldata encoding failed: {enc_err}")
+
+    description = (
+        f"Request AI Analysis: {best_symbol}\n"
+        f"Current price: ${price:,.4f} ({change_24h:+.2f}% 24h)\n\n"
+        f"Step 1: Your wallet triggers requestAI() on-chain → emits AIRequested event\n"
+        f"Step 2: Backend oracle detects event → runs Claude AI inference\n"
+        f"Step 3: Oracle writes fulfillAIResult() on-chain → result stored forever"
+    )
+
+    # Preview: what AI would decide right now
+    action, confidence, reasoning, _ = get_ai_decision(
+        "SoeClawAI", "momentum and technical analysis", best_symbol, price, change_24h
+    )
+
+    confidence_int = max(0, min(100, int(confidence)))
+    return {
+        "preview": {                      # AI preview (not on-chain yet)
+            "symbol":     best_symbol,
+            "action":     action,
+            "confidence": confidence_int,
+            "reasoning":  reasoning,
+            "price":      price,
+            "change_24h": change_24h,
+        },
+        "tx_data": {
+            "to":          contract_addr,
+            "value":       "0x0",
+            "data":        calldata,
+            "gasLimit":    "0x30D40",
+            "description": description,
+            "action_label": f"Request AI for {best_symbol}",
+        },
+    }
+
+
+@app.get("/api/ai/result/{request_id}")
+async def get_ai_result(request_id: int):
+    """Poll for fulfillment of an AIRequested event."""
+    if not mantle_client.contract:
+        return {"fulfilled": False, "error": "Contract not connected"}
+    try:
+        result = await asyncio.to_thread(
+            mantle_client.contract.functions.getAIResult(request_id).call
+        )
+        action, confidence, reasoning, fulfilled, fulfilled_at, caller = result
+        return {
+            "fulfilled":    fulfilled,
+            "action":       action,
+            "confidence":   confidence,
+            "reasoning":    reasoning,
+            "fulfilled_at": fulfilled_at,
+            "caller":       caller,
+        }
+    except Exception as e:
+        return {"fulfilled": False, "error": str(e)}
+
+
 # ── Auth schemas ────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
@@ -1104,11 +1329,13 @@ async def backtest(symbol: str):
 
 @app.get("/api/wallet")
 async def get_wallet():
+    from mantle_client import RPC_URL, CHAIN_ID, _NETWORK
+    network_name = "Mantle" if _NETWORK == "mainnet" else "Mantle Sepolia Testnet"
     result = {
         "address": "N/A",
         "mnt_balance": 0.0,
-        "network": "Mantle Sepolia Testnet",
-        "chain_id": 5003,
+        "network": network_name,
+        "chain_id": CHAIN_ID,
         "connected": False,
     }
     private_key = os.getenv("PRIVATE_KEY", "")
@@ -1117,7 +1344,7 @@ async def get_wallet():
 
     try:
         from web3 import Web3
-        w3 = Web3(Web3.HTTPProvider("https://rpc.sepolia.mantle.xyz", request_kwargs={"timeout": 10}))
+        w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={"timeout": 10}))
         account = w3.eth.account.from_key(private_key)
         result["address"] = account.address
         if w3.is_connected():
@@ -1439,7 +1666,7 @@ async def agent_loop():
                     db.add(trade)
                     db.commit()
 
-                    explorer_url = f"https://explorer.sepolia.mantle.xyz/tx/{tx_hash}"
+                    explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}"
                     await manager.broadcast({
                         "type": "TRADE",
                         "data": {
@@ -1530,7 +1757,7 @@ async def agent_loop():
                         hold_tx = await asyncio.to_thread(
                             mantle_client.log_decision_on_chain, agent_cfg["name"], symbol, "HOLD", confidence
                         )
-                        hold_explorer = f"https://explorer.sepolia.mantle.xyz/tx/{hold_tx}"
+                        hold_explorer = f"{EXPLORER_BASE}/tx/{hold_tx}"
                         chain_msg = f"HOLD recorded on-chain — {agent_cfg['name']} held {symbol} (Conf: {confidence:.0f}%)"
                         chain_thought = models.ThoughtStream(
                             agent_name="MANTLE",
@@ -1573,6 +1800,7 @@ async def startup_event():
         print("[Bybit] WebSocket disabled — using CoinGecko (set BYBIT_ENABLED=true to enable)")
 
     asyncio.create_task(agent_loop())     # AI trading loop
+    asyncio.create_task(oracle_loop())    # AI oracle: AIRequested → fulfillAIResult
 
     # AI Alpha & Data — whale tracker + anomaly detector + Telegram/Discord bots
     try:
@@ -1706,7 +1934,7 @@ def cfo_decision_timeline(db: Session = Depends(database.get_db)):
             "pnl_pct":       round(pnl_pct, 2),
             "pnl_usd":       round(pnl_usd, 2),
             "tx_hash":       t.tx_hash,
-            "explorer_url":  f"https://explorer.sepolia.mantle.xyz/tx/{t.tx_hash}" if t.tx_hash else None,
+            "explorer_url":  f"{EXPLORER_BASE}/tx/{t.tx_hash}" if t.tx_hash else None,
             "verified":      bool(t.tx_hash),
             "outcome":       "WIN" if pnl_usd > 0 else ("LOSS" if pnl_usd < 0 else "OPEN"),
         })
@@ -2414,6 +2642,8 @@ async def cfo_portfolio_analyze(req: PortfolioAnalyzeRequest):
 class CFOChatRequest(BaseModel):
     message: str
     history: list[dict] = []
+    wallet_address: str = ""
+    wallet_balance_mnt: float = 0.0
 
 @app.post("/api/cfo/chat")
 async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
@@ -2523,7 +2753,9 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
             f"Capital      : ${capital:,.2f}\n"
             f"Risk Profile : {profile.upper()}\n"
             f"MNT Balance  : {mnt_balance} MNT (Mantle Sepolia)\n"
-            f"Agent Status : {'RUNNING' if agent_running else 'STOPPED'}\n\n"
+            f"Agent Status : {'RUNNING' if agent_running else 'STOPPED'}\n"
+            + (f"User Wallet  : {req.wallet_address} ({req.wallet_balance_mnt:.4f} MNT)\n" if req.wallet_address else "") +
+            "\n"
             f"=== PORTFOLIO PERFORMANCE ===\n"
             f"Total Trades : {total_trades}\n"
             f"Win / Loss   : {wins}W / {losses}L\n"

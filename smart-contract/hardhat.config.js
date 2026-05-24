@@ -10,12 +10,20 @@ export default {
   networks: {
     mantleTestnet: {
       url: "https://rpc.sepolia.mantle.xyz",
+      chainId: 5003,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 60000000000,
+    },
+    mantleMainnet: {
+      url: "https://rpc.mantle.xyz",
+      chainId: 5000,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {
     apiKey: {
-      mantleTestnet: process.env.MANTLE_EXPLORER_API_KEY || "empty"
+      mantleTestnet: process.env.MANTLE_EXPLORER_API_KEY || "empty",
+      mantleMainnet: process.env.MANTLE_EXPLORER_API_KEY || "empty",
     },
     customChains: [
       {
@@ -23,9 +31,17 @@ export default {
         chainId: 5003,
         urls: {
           apiURL: "https://explorer.sepolia.mantle.xyz/api",
-          browserURL: "https://explorer.sepolia.mantle.xyz"
-        }
-      }
-    ]
-  }
+          browserURL: "https://explorer.sepolia.mantle.xyz",
+        },
+      },
+      {
+        network: "mantleMainnet",
+        chainId: 5000,
+        urls: {
+          apiURL: "https://explorer.mantle.xyz/api",
+          browserURL: "https://explorer.mantle.xyz",
+        },
+      },
+    ],
+  },
 };

@@ -39,7 +39,8 @@ export interface Dict {
   rm_sig2_cond: string; rm_sig2_act: string;
   rm_sig3_cond: string; rm_sig3_act: string;
   // Bottom panel tabs
-  tab_alpha: string; tab_rwa: string; tab_devtools: string; tab_economy: string;
+  tab_alpha: string; tab_rwa: string; tab_devtools: string; tab_economy: string; tab_benchmark: string;
+  insights_title: string;
   // Alpha feed
   alpha_scanning: string; alpha_stable: string;
   // RWA
@@ -48,6 +49,14 @@ export interface Dict {
   devtools_gas_price: string; devtools_network: string; devtools_paste: string; devtools_example: string; devtools_run_audit: string; devtools_analyzing: string;
   // Economy / Achievements
   economy_total_mnt: string; economy_trades: string; economy_wr: string; badges_unlocked: string; share_btn: string; share_copied: string;
+  // SentimentPanel
+  sentiment_title: string; sentiment_loading: string;
+  sentiment_fg: string; sentiment_whale: string; sentiment_social: string;
+  sentiment_alerts: string; sentiment_mentions: string; sentiment_signals_title: string;
+  // CFO Panel
+  cfo_welcome: string; cfo_placeholder: string;
+  cfo_quick1: string; cfo_quick2: string; cfo_quick3: string; cfo_quick4: string;
+  cfo_unreachable: string;
 }
 
 export const translations: Record<LangCode, Dict> = {
@@ -96,13 +105,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: 'Low volatility + upward drift', rm_sig1_act: 'BUY low confidence (safe entry)',
     rm_sig2_cond: 'High volatility + big drop', rm_sig2_act: 'SELL (risk-off, protect capital)',
     rm_sig3_cond: 'Extreme volatility (σ > 2%)', rm_sig3_act: 'HOLD (too risky)',
-    tab_alpha: 'Alpha Feed', tab_rwa: 'RWA Yields', tab_devtools: 'DevTools', tab_economy: 'Economy',
+    tab_alpha: 'Alpha Feed', tab_rwa: 'RWA Yields', tab_devtools: 'DevTools', tab_economy: 'Economy', tab_benchmark: 'On-Chain',
+    insights_title: 'SOECLAW INSIGHTS',
     alpha_scanning: 'Scanning for alpha signals...', alpha_stable: 'No anomalies detected. Markets stable.',
     rwa_blended_apy: 'BLENDED APY', rwa_annual_yield: 'ANNUAL YIELD', rwa_strategy: 'STRATEGY', rwa_allocation: 'allocation',
     devtools_gas_price: 'GAS PRICE', devtools_network: 'NETWORK', devtools_paste: 'Paste Solidity contract:',
     devtools_example: 'Load Example', devtools_run_audit: 'RUN AI AUDIT', devtools_analyzing: 'ANALYZING WITH AI...',
     economy_total_mnt: 'TOTAL MNT IN SYSTEM', economy_trades: 'trades', economy_wr: 'WR',
     badges_unlocked: 'unlocked', share_btn: 'SHARE', share_copied: 'COPIED!',
+    sentiment_title: 'SENTIMENT INTEL', sentiment_loading: 'Loading Sentiment...',
+    sentiment_fg: 'Fear & Greed Index', sentiment_whale: '🐳 WHALE SIGNAL', sentiment_social: '📡 SOCIAL VOLUME',
+    sentiment_alerts: 'alerts detected', sentiment_mentions: 'mentions/hr', sentiment_signals_title: 'Signal Breakdown',
+    cfo_welcome: 'Hello! I\'m SoeClaw AI CFO.\nAsk me about market, strategy, portfolio, or current market conditions.',
+    cfo_placeholder: 'Ask AI CFO...', cfo_quick1: 'BTC conditions?', cfo_quick2: 'Portfolio strategy?',
+    cfo_quick3: 'Risk analysis?', cfo_quick4: 'Market status?', cfo_unreachable: 'Backend unreachable.',
   },
 
   id: {
@@ -150,13 +166,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: 'Volatilitas rendah + kecenderungan naik', rm_sig1_act: 'BELI kepercayaan rendah (entri aman)',
     rm_sig2_cond: 'Volatilitas tinggi + penurunan besar', rm_sig2_act: 'JUAL (risk-off, lindungi modal)',
     rm_sig3_cond: 'Volatilitas ekstrem (σ > 2%)', rm_sig3_act: 'TAHAN (terlalu berisiko)',
-    tab_alpha: 'Alpha Feed', tab_rwa: 'Imbal Hasil RWA', tab_devtools: 'DevTools', tab_economy: 'Ekonomi',
+    tab_alpha: 'Alpha Feed', tab_rwa: 'Imbal Hasil RWA', tab_devtools: 'DevTools', tab_economy: 'Ekonomi', tab_benchmark: 'On-Chain',
+    insights_title: 'SOECLAW INSIGHTS',
     alpha_scanning: 'Memindai sinyal alpha...', alpha_stable: 'Tidak ada anomali. Pasar stabil.',
     rwa_blended_apy: 'APY GABUNGAN', rwa_annual_yield: 'IMBAL HASIL TAHUNAN', rwa_strategy: 'STRATEGI', rwa_allocation: 'alokasi',
     devtools_gas_price: 'HARGA GAS', devtools_network: 'JARINGAN', devtools_paste: 'Tempel kontrak Solidity:',
     devtools_example: 'Muat Contoh', devtools_run_audit: 'JALANKAN AUDIT AI', devtools_analyzing: 'MENGANALISIS DENGAN AI...',
     economy_total_mnt: 'TOTAL MNT DI SISTEM', economy_trades: 'perdagangan', economy_wr: 'MK',
     badges_unlocked: 'terbuka', share_btn: 'BAGIKAN', share_copied: 'DISALIN!',
+    sentiment_title: 'INTEL SENTIMEN', sentiment_loading: 'Memuat Sentimen...',
+    sentiment_fg: 'Indeks Ketakutan & Keserakahan', sentiment_whale: '🐳 SINYAL WHALE', sentiment_social: '📡 VOLUME SOSIAL',
+    sentiment_alerts: 'alert terdeteksi', sentiment_mentions: 'sebutan/jam', sentiment_signals_title: 'Rincian Sinyal',
+    cfo_welcome: 'Halo! Saya AI CFO SoeClaw.\nTanya saya tentang pasar, strategi, portfolio, atau kondisi market saat ini.',
+    cfo_placeholder: 'Tanya AI CFO...', cfo_quick1: 'Kondisi BTC?', cfo_quick2: 'Strategi portfolio?',
+    cfo_quick3: 'Analisis risiko?', cfo_quick4: 'Status market?', cfo_unreachable: 'Backend tidak dapat dijangkau.',
   },
 
   'zh-CN': {
@@ -204,13 +227,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: '低波动 + 上行漂移', rm_sig1_act: '低置信度买入 (安全入场)',
     rm_sig2_cond: '高波动 + 大幅下跌', rm_sig2_act: '卖出 (风险规避，保护本金)',
     rm_sig3_cond: '极端波动 (σ > 2%)', rm_sig3_act: '持有 (风险过高)',
-    tab_alpha: 'Alpha信号', tab_rwa: 'RWA收益', tab_devtools: '开发工具', tab_economy: '经济',
+    tab_alpha: 'Alpha信号', tab_rwa: 'RWA收益', tab_devtools: '开发工具', tab_economy: '经济', tab_benchmark: '链上',
+    insights_title: 'SOECLAW 洞察',
     alpha_scanning: '正在扫描Alpha信号...', alpha_stable: '未检测到异常。市场稳定。',
     rwa_blended_apy: '综合APY', rwa_annual_yield: '年化收益', rwa_strategy: '策略', rwa_allocation: '配置',
     devtools_gas_price: 'GAS价格', devtools_network: '网络', devtools_paste: '粘贴Solidity合约:',
     devtools_example: '加载示例', devtools_run_audit: '运行AI审计', devtools_analyzing: 'AI分析中...',
     economy_total_mnt: '系统总MNT', economy_trades: '交易', economy_wr: '胜率',
     badges_unlocked: '已解锁', share_btn: '分享', share_copied: '已复制!',
+    sentiment_title: '情绪情报', sentiment_loading: '加载情绪数据...',
+    sentiment_fg: '恐惧与贪婪指数', sentiment_whale: '🐳 鲸鱼信号', sentiment_social: '📡 社交量',
+    sentiment_alerts: '个警报', sentiment_mentions: '次提及/小时', sentiment_signals_title: '信号分析',
+    cfo_welcome: '你好！我是SoeClaw AI CFO。\n请询问我关于市场、策略、投资组合或当前市场状况。',
+    cfo_placeholder: '询问AI CFO...', cfo_quick1: 'BTC状况？', cfo_quick2: '投资组合策略？',
+    cfo_quick3: '风险分析？', cfo_quick4: '市场状态？', cfo_unreachable: '后端无法访问。',
   },
 
   ja: {
@@ -258,13 +288,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: '低ボラティリティ + 上昇傾向', rm_sig1_act: '低確信度買い (安全エントリー)',
     rm_sig2_cond: '高ボラティリティ + 大幅下落', rm_sig2_act: '売り (リスクオフ、資本保護)',
     rm_sig3_cond: '極端なボラティリティ (σ > 2%)', rm_sig3_act: 'ホールド (リスク過大)',
-    tab_alpha: 'Alphaフィード', tab_rwa: 'RWA利回り', tab_devtools: '開発ツール', tab_economy: 'エコノミー',
+    tab_alpha: 'Alphaフィード', tab_rwa: 'RWA利回り', tab_devtools: '開発ツール', tab_economy: 'エコノミー', tab_benchmark: 'オンチェーン',
+    insights_title: 'SOECLAW インサイト',
     alpha_scanning: 'Alphaシグナルをスキャン中...', alpha_stable: '異常なし。市場は安定しています。',
     rwa_blended_apy: '総合APY', rwa_annual_yield: '年間利回り', rwa_strategy: '戦略', rwa_allocation: '配分',
     devtools_gas_price: 'ガス価格', devtools_network: 'ネットワーク', devtools_paste: 'Solidityコードを貼り付け:',
     devtools_example: 'サンプルを読み込む', devtools_run_audit: 'AI監査実行', devtools_analyzing: 'AI分析中...',
     economy_total_mnt: 'システム総MNT', economy_trades: '取引', economy_wr: '勝率',
     badges_unlocked: '解除済み', share_btn: '共有', share_copied: 'コピー済み!',
+    sentiment_title: 'センチメント情報', sentiment_loading: 'センチメント読込中...',
+    sentiment_fg: '恐怖&貪欲指数', sentiment_whale: '🐳 クジラシグナル', sentiment_social: '📡 ソーシャル量',
+    sentiment_alerts: '件のアラート', sentiment_mentions: '件/時間', sentiment_signals_title: 'シグナル内訳',
+    cfo_welcome: 'こんにちは！SoeClaw AI CFOです。\n市場、戦略、ポートフォリオ、または現在の市場状況についてお尋ねください。',
+    cfo_placeholder: 'AI CFOに質問...', cfo_quick1: 'BTCの状況は？', cfo_quick2: 'ポートフォリオ戦略？',
+    cfo_quick3: 'リスク分析？', cfo_quick4: '市場の状態？', cfo_unreachable: 'バックエンドに到達できません。',
   },
 
   ko: {
@@ -312,13 +349,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: '낮은 변동성 + 상승 추세', rm_sig1_act: '낮은 신뢰도 매수 (안전 진입)',
     rm_sig2_cond: '높은 변동성 + 큰 하락', rm_sig2_act: '매도 (리스크 오프, 자본 보호)',
     rm_sig3_cond: '극단적 변동성 (σ > 2%)', rm_sig3_act: '보유 (위험 과도)',
-    tab_alpha: 'Alpha 피드', tab_rwa: 'RWA 수익', tab_devtools: '개발도구', tab_economy: '경제',
+    tab_alpha: 'Alpha 피드', tab_rwa: 'RWA 수익', tab_devtools: '개발도구', tab_economy: '경제', tab_benchmark: '온체인',
+    insights_title: 'SOECLAW 인사이트',
     alpha_scanning: 'Alpha 신호 스캔 중...', alpha_stable: '이상 없음. 시장 안정.',
     rwa_blended_apy: '혼합 APY', rwa_annual_yield: '연간 수익', rwa_strategy: '전략', rwa_allocation: '배분',
     devtools_gas_price: '가스 가격', devtools_network: '네트워크', devtools_paste: 'Solidity 계약 붙여넣기:',
     devtools_example: '예시 불러오기', devtools_run_audit: 'AI 감사 실행', devtools_analyzing: 'AI 분석 중...',
     economy_total_mnt: '시스템 총 MNT', economy_trades: '거래', economy_wr: '승률',
     badges_unlocked: '해제됨', share_btn: '공유', share_copied: '복사됨!',
+    sentiment_title: '감성 인텔리전스', sentiment_loading: '감성 로딩 중...',
+    sentiment_fg: '공포&탐욕 지수', sentiment_whale: '🐳 고래 신호', sentiment_social: '📡 소셜 볼륨',
+    sentiment_alerts: '개 경고', sentiment_mentions: '회 언급/시간', sentiment_signals_title: '신호 분석',
+    cfo_welcome: '안녕하세요! SoeClaw AI CFO입니다.\n시장, 전략, 포트폴리오 또는 현재 시장 상황에 대해 문의하세요.',
+    cfo_placeholder: 'AI CFO에게 질문...', cfo_quick1: 'BTC 상황?', cfo_quick2: '포트폴리오 전략?',
+    cfo_quick3: '리스크 분석?', cfo_quick4: '시장 상태?', cfo_unreachable: '백엔드에 연결할 수 없습니다.',
   },
 
   ar: {
@@ -366,13 +410,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: 'تقلب منخفض + اتجاه صاعد', rm_sig1_act: 'شراء بثقة منخفضة (دخول آمن)',
     rm_sig2_cond: 'تقلب مرتفع + هبوط حاد', rm_sig2_act: 'بيع (تجنب المخاطر، حماية رأس المال)',
     rm_sig3_cond: 'تقلب شديد (σ > 2%)', rm_sig3_act: 'تمسك (خطر مرتفع جداً)',
-    tab_alpha: 'تغذية Alpha', tab_rwa: 'عوائد RWA', tab_devtools: 'أدوات المطور', tab_economy: 'الاقتصاد',
+    tab_alpha: 'تغذية Alpha', tab_rwa: 'عوائد RWA', tab_devtools: 'أدوات المطور', tab_economy: 'الاقتصاد', tab_benchmark: 'على السلسلة',
+    insights_title: 'رؤى SOECLAW',
     alpha_scanning: 'البحث عن إشارات Alpha...', alpha_stable: 'لا توجد شذوذات. الأسواق مستقرة.',
     rwa_blended_apy: 'APY المدمج', rwa_annual_yield: 'العائد السنوي', rwa_strategy: 'الاستراتيجية', rwa_allocation: 'التخصيص',
     devtools_gas_price: 'سعر الغاز', devtools_network: 'الشبكة', devtools_paste: 'الصق عقد Solidity:',
     devtools_example: 'تحميل مثال', devtools_run_audit: 'تشغيل تدقيق AI', devtools_analyzing: 'جارٍ التحليل بالذكاء الاصطناعي...',
     economy_total_mnt: 'إجمالي MNT في النظام', economy_trades: 'صفقات', economy_wr: 'نسبة الفوز',
     badges_unlocked: 'مفتوح', share_btn: 'مشاركة', share_copied: 'تم النسخ!',
+    sentiment_title: 'استخبارات المشاعر', sentiment_loading: 'جار تحميل المشاعر...',
+    sentiment_fg: 'مؤشر الخوف والجشع', sentiment_whale: '🐳 إشارة الحيتان', sentiment_social: '📡 الحجم الاجتماعي',
+    sentiment_alerts: 'تنبيهات', sentiment_mentions: 'إشارة/ساعة', sentiment_signals_title: 'تحليل الإشارات',
+    cfo_welcome: 'مرحبا! أنا AI CFO SoeClaw.\nاسألني عن السوق أو الاستراتيجية أو المحفظة أو الأوضاع الحالية.',
+    cfo_placeholder: 'اسأل AI CFO...', cfo_quick1: 'أوضاع BTC؟', cfo_quick2: 'استراتيجية المحفظة؟',
+    cfo_quick3: 'تحليل المخاطر؟', cfo_quick4: 'حالة السوق؟', cfo_unreachable: 'الخادم غير متاح.',
   },
 
   fr: {
@@ -420,13 +471,20 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: 'Faible volatilité + dérive haussière', rm_sig1_act: 'ACHETER faible confiance (entrée sûre)',
     rm_sig2_cond: 'Forte volatilité + forte baisse', rm_sig2_act: 'VENDRE (risk-off, protéger le capital)',
     rm_sig3_cond: 'Volatilité extrême (σ > 2%)', rm_sig3_act: 'CONSERVER (trop risqué)',
-    tab_alpha: 'Flux Alpha', tab_rwa: 'Rendements RWA', tab_devtools: 'Outils Dev', tab_economy: 'Économie',
+    tab_alpha: 'Flux Alpha', tab_rwa: 'Rendements RWA', tab_devtools: 'Outils Dev', tab_economy: 'Économie', tab_benchmark: 'On-Chain',
+    insights_title: 'SOECLAW INSIGHTS',
     alpha_scanning: 'Scan des signaux Alpha...', alpha_stable: 'Aucune anomalie. Marchés stables.',
     rwa_blended_apy: 'APY MIXTE', rwa_annual_yield: 'RENDEMENT ANNUEL', rwa_strategy: 'STRATÉGIE', rwa_allocation: 'allocation',
     devtools_gas_price: 'PRIX DU GAS', devtools_network: 'RÉSEAU', devtools_paste: 'Collez le contrat Solidity:',
     devtools_example: 'Charger un exemple', devtools_run_audit: 'LANCER AUDIT AI', devtools_analyzing: 'ANALYSE EN COURS...',
     economy_total_mnt: 'MNT TOTAL DU SYSTÈME', economy_trades: 'transactions', economy_wr: 'TR',
     badges_unlocked: 'débloqué', share_btn: 'PARTAGER', share_copied: 'COPIÉ!',
+    sentiment_title: 'INTEL SENTIMENT', sentiment_loading: 'Chargement Sentiment...',
+    sentiment_fg: 'Indice Peur & Avidité', sentiment_whale: '🐳 SIGNAL BALEINE', sentiment_social: '📡 VOLUME SOCIAL',
+    sentiment_alerts: 'alertes détectées', sentiment_mentions: 'mentions/h', sentiment_signals_title: 'Analyse des Signaux',
+    cfo_welcome: 'Bonjour! Je suis SoeClaw AI CFO.\nPosez-moi des questions sur le marché, la stratégie, le portefeuille ou les conditions actuelles.',
+    cfo_placeholder: 'Demandez à AI CFO...', cfo_quick1: 'Conditions BTC ?', cfo_quick2: 'Stratégie portfolio ?',
+    cfo_quick3: 'Analyse des risques ?', cfo_quick4: 'État du marché ?', cfo_unreachable: 'Backend inaccessible.',
   },
 
   es: {
@@ -474,12 +532,19 @@ export const translations: Record<LangCode, Dict> = {
     rm_sig1_cond: 'Baja volatilidad + deriva alcista', rm_sig1_act: 'COMPRAR baja confianza (entrada segura)',
     rm_sig2_cond: 'Alta volatilidad + gran caída', rm_sig2_act: 'VENDER (risk-off, proteger capital)',
     rm_sig3_cond: 'Volatilidad extrema (σ > 2%)', rm_sig3_act: 'MANTENER (demasiado arriesgado)',
-    tab_alpha: 'Señales Alpha', tab_rwa: 'Rendimientos RWA', tab_devtools: 'DevTools', tab_economy: 'Economía',
+    tab_alpha: 'Señales Alpha', tab_rwa: 'Rendimientos RWA', tab_devtools: 'DevTools', tab_economy: 'Economía', tab_benchmark: 'On-Chain',
+    insights_title: 'SOECLAW INSIGHTS',
     alpha_scanning: 'Escaneando señales Alpha...', alpha_stable: 'Sin anomalías. Mercados estables.',
     rwa_blended_apy: 'APY MIXTO', rwa_annual_yield: 'RENDIMIENTO ANUAL', rwa_strategy: 'ESTRATEGIA', rwa_allocation: 'asignación',
     devtools_gas_price: 'PRECIO GAS', devtools_network: 'RED', devtools_paste: 'Pega el contrato Solidity:',
     devtools_example: 'Cargar Ejemplo', devtools_run_audit: 'EJECUTAR AUDITORÍA AI', devtools_analyzing: 'ANALIZANDO CON AI...',
     economy_total_mnt: 'MNT TOTAL EN SISTEMA', economy_trades: 'operaciones', economy_wr: 'TR',
     badges_unlocked: 'desbloqueado', share_btn: 'COMPARTIR', share_copied: '¡COPIADO!',
+    sentiment_title: 'INTEL SENTIMIENTO', sentiment_loading: 'Cargando Sentimiento...',
+    sentiment_fg: 'Índice Miedo y Codicia', sentiment_whale: '🐳 SEÑAL BALLENA', sentiment_social: '📡 VOLUMEN SOCIAL',
+    sentiment_alerts: 'alertas detectadas', sentiment_mentions: 'menciones/h', sentiment_signals_title: 'Análisis de Señales',
+    cfo_welcome: '¡Hola! Soy SoeClaw AI CFO.\nPregúntame sobre el mercado, estrategia, cartera o condiciones actuales.',
+    cfo_placeholder: 'Pregunta al AI CFO...', cfo_quick1: '¿Condiciones BTC?', cfo_quick2: '¿Estrategia de cartera?',
+    cfo_quick3: '¿Análisis de riesgo?', cfo_quick4: '¿Estado del mercado?', cfo_unreachable: 'Backend inaccesible.',
   },
 };

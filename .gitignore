@@ -24,3 +24,5 @@ smart-contract/ignition/deployments/
 # Misc
 .DS_Store
 *.log
+
+.vercel

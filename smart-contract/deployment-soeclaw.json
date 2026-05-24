@@ -1,0 +1,23 @@
+{
+  "network": "mantleTestnet",
+  "chainId": 5003,
+  "deployedAt": "2026-05-24T00:00:00.000Z",
+  "deployer": "0xBaC32Ad5DD90b9eF4136529DFf4D8A2780AcE1f9",
+  "contracts": {
+    "SoeClaw": {
+      "address": "0x95877513429566993C96544B639c87E7c6965a3C",
+      "version": "v3",
+      "explorerUrl": "https://explorer.sepolia.mantle.xyz/address/0x95877513429566993C96544B639c87E7c6965a3C",
+      "sourcifyUrl": "https://repo.sourcify.dev/contracts/full_match/5003/0x95877513429566993C96544B639c87E7c6965a3C/",
+      "features": [
+        "requestAI(symbol) — user triggers AI oracle on-chain, emits AIRequested event",
+        "fulfillAIResult(requestId, action, confidence, reasoning) — backend oracle writes AI result on-chain",
+        "getAIResult(requestId) — read AI decision stored on-chain",
+        "addTrade(agentName, symbol, action, confidence) — manual AI decision recording",
+        "triggerAgent(agentName) — trigger AI agent on-chain",
+        "getUserActionCount(address) — how many times a wallet triggered AI"
+      ]
+    }
+  },
+  "notes": "v3 adds full AI oracle pattern: requestAI() → AIRequested event → backend Claude inference → fulfillAIResult() → on-chain result stored"
+}
