@@ -90,16 +90,16 @@ export default function ByrealPanel() {
         {/* Tabs — 3 Byreal components */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, background: 'rgba(0,0,0,0.35)', padding: 2, borderRadius: 6, border: '1px solid rgba(255,255,255,0.05)' }}>
           {([
-            { id: 'perps',    label: 'Perps CLI',    color: '#f7931a' },
-            { id: 'skills',   label: 'Agent Skills', color: '#00d4ff' },
-            { id: 'realclaw', label: 'RealClaw',      color: '#a78bfa' },
-          ] as const).map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            { id: 'perps',    label: t('bp_tab_perps'),    color: '#f7931a' },
+            { id: 'skills',   label: t('bp_tab_skills'),   color: '#00d4ff' },
+            { id: 'realclaw', label: t('bp_tab_realclaw'), color: '#a78bfa' },
+          ] as const).map(tabItem => (
+            <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
               style={{ fontSize: '0.6rem', padding: '3px 2px', borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, textAlign: 'center',
-                background: tab === t.id ? `${t.color}20` : 'transparent',
-                border: tab === t.id ? `1px solid ${t.color}55` : '1px solid transparent',
-                color: tab === t.id ? t.color : 'var(--text-muted)',
-              }}>{t.label}</button>
+                background: tabItem.id === tab ? `${tabItem.color}20` : 'transparent',
+                border: tabItem.id === tab ? `1px solid ${tabItem.color}55` : '1px solid transparent',
+                color: tabItem.id === tab ? tabItem.color : 'var(--text-muted)',
+              }}>{tabItem.label}</button>
           ))}
         </div>
       </div>

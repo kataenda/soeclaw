@@ -74,7 +74,7 @@ export interface Dict {
   as_agent_perf: string; as_verify: string;
   // ByrealPanel
   bp_connecting: string; bp_lp_positions: string; bp_recent_swaps: string;
-  bp_installed_skills: string;
+  bp_installed_skills: string; bp_tab_perps: string; bp_tab_skills: string; bp_tab_realclaw: string;
   // ShareAlphaCard
   share_loading: string; share_copy: string; share_close: string; share_hint: string;
   // AchievementsPanel
@@ -164,6 +164,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'Verify on Mantle Explorer',
     bp_connecting: 'Connecting to Byreal...', bp_lp_positions: 'LP Positions (CLMM)',
     bp_recent_swaps: 'Recent Agent Swaps', bp_installed_skills: 'Installed Skills',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: 'Agent Skills', bp_tab_realclaw: 'RealClaw',
     share_loading: 'Loading alpha data...', share_copy: '📋 COPY ALPHA REPORT',
     share_close: 'CLOSE', share_hint: 'Screenshot this card to share on Twitter / Telegram',
     ach_badges_tab: '🏆 BADGES', ach_economy_tab: '💰 ECONOMY', ach_share: '📤 SHARE',
@@ -252,6 +253,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'Verifikasi di Mantle Explorer',
     bp_connecting: 'Menghubungkan ke Byreal...', bp_lp_positions: 'Posisi LP (CLMM)',
     bp_recent_swaps: 'Swap Agen Terbaru', bp_installed_skills: 'Skill Terpasang',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: 'Skill Agen', bp_tab_realclaw: 'RealClaw',
     share_loading: 'Memuat data alpha...', share_copy: '📋 SALIN LAPORAN ALPHA',
     share_close: 'TUTUP', share_hint: 'Screenshot kartu ini untuk dibagikan di Twitter / Telegram',
     ach_badges_tab: '🏆 LENCANA', ach_economy_tab: '💰 EKONOMI', ach_share: '📤 BAGIKAN',
@@ -340,6 +342,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: '在 Mantle Explorer 验证',
     bp_connecting: '连接 Byreal 中...', bp_lp_positions: 'LP 仓位 (CLMM)',
     bp_recent_swaps: '最近代理交换', bp_installed_skills: '已安装技能',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: '代理技能', bp_tab_realclaw: 'RealClaw',
     share_loading: '加载 Alpha 数据中...', share_copy: '📋 复制 Alpha 报告',
     share_close: '关闭', share_hint: '截图此卡片分享到 Twitter / Telegram',
     ach_badges_tab: '🏆 徽章', ach_economy_tab: '💰 经济', ach_share: '📤 分享',
@@ -428,6 +431,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'Mantle Explorer で検証',
     bp_connecting: 'Byreal に接続中...', bp_lp_positions: 'LP ポジション (CLMM)',
     bp_recent_swaps: '最近のエージェントスワップ', bp_installed_skills: 'インストール済みスキル',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: 'エージェントスキル', bp_tab_realclaw: 'RealClaw',
     share_loading: 'Alpha データ読み込み中...', share_copy: '📋 Alpha レポートをコピー',
     share_close: '閉じる', share_hint: 'このカードをスクショして Twitter / Telegram でシェア',
     ach_badges_tab: '🏆 バッジ', ach_economy_tab: '💰 エコノミー', ach_share: '📤 シェア',
@@ -516,6 +520,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'Mantle Explorer에서 검증',
     bp_connecting: 'Byreal 연결 중...', bp_lp_positions: 'LP 포지션 (CLMM)',
     bp_recent_swaps: '최근 에이전트 스왑', bp_installed_skills: '설치된 스킬',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: '에이전트 스킬', bp_tab_realclaw: 'RealClaw',
     share_loading: 'Alpha 데이터 로딩 중...', share_copy: '📋 Alpha 리포트 복사',
     share_close: '닫기', share_hint: '이 카드를 스크린샷하여 Twitter / Telegram에 공유하세요',
     ach_badges_tab: '🏆 배지', ach_economy_tab: '💰 경제', ach_share: '📤 공유',
@@ -604,6 +609,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'تحقق على Mantle Explorer',
     bp_connecting: 'الاتصال بـ Byreal...', bp_lp_positions: 'مراكز LP (CLMM)',
     bp_recent_swaps: 'أحدث تبادلات الوكيل', bp_installed_skills: 'المهارات المثبتة',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: 'مهارات الوكيل', bp_tab_realclaw: 'RealClaw',
     share_loading: 'جارٍ تحميل بيانات Alpha...', share_copy: '📋 نسخ تقرير Alpha',
     share_close: 'إغلاق', share_hint: 'التقط صورة لهذه البطاقة وشاركها على Twitter / Telegram',
     ach_badges_tab: '🏆 الشارات', ach_economy_tab: '💰 الاقتصاد', ach_share: '📤 مشاركة',
@@ -692,6 +698,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'Vérifier sur Mantle Explorer',
     bp_connecting: 'Connexion à Byreal...', bp_lp_positions: 'Positions LP (CLMM)',
     bp_recent_swaps: 'Échanges récents des Agents', bp_installed_skills: 'Compétences installées',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: 'Compétences Agent', bp_tab_realclaw: 'RealClaw',
     share_loading: 'Chargement des données Alpha...', share_copy: '📋 COPIER LE RAPPORT ALPHA',
     share_close: 'FERMER', share_hint: 'Capturez cette carte pour la partager sur Twitter / Telegram',
     ach_badges_tab: '🏆 BADGES', ach_economy_tab: '💰 ÉCONOMIE', ach_share: '📤 PARTAGER',
@@ -780,6 +787,7 @@ export const translations: Record<LangCode, Dict> = {
     as_verify: 'Verificar en Mantle Explorer',
     bp_connecting: 'Conectando a Byreal...', bp_lp_positions: 'Posiciones LP (CLMM)',
     bp_recent_swaps: 'Swaps Recientes de Agentes', bp_installed_skills: 'Habilidades Instaladas',
+    bp_tab_perps: 'Perps CLI', bp_tab_skills: 'Habilidades Agente', bp_tab_realclaw: 'RealClaw',
     share_loading: 'Cargando datos Alpha...', share_copy: '📋 COPIAR INFORME ALPHA',
     share_close: 'CERRAR', share_hint: 'Captura esta tarjeta para compartir en Twitter / Telegram',
     ach_badges_tab: '🏆 INSIGNIAS', ach_economy_tab: '💰 ECONOMÍA', ach_share: '📤 COMPARTIR',
