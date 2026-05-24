@@ -1,4 +1,4 @@
-# SoeClaw OS — Autonomous AI Trading Platform on Mantle
+﻿# SoeClaw OS — Autonomous AI Trading Platform on Mantle
 
 > Four autonomous AI agents trade BTC/ETH/MNT with verifiable on-chain records, ERC-8004 identity, real Byreal DEX integration, and dynamic USDY/mETH RWA allocation — all streaming live to a cyberpunk dashboard.
 
@@ -12,8 +12,8 @@
 
 | Contract | Address | Explorer |
 |---|---|---|
-| SoeClaw Trading Engine | [`0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8`](https://explorer.sepolia.mantle.xyz/address/0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8) | Mantle Sepolia |
-| ERC-8004 IdentityRegistry | [`0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d`](https://explorer.sepolia.mantle.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d) | Mantle Sepolia |
+| SoeClaw Trading Engine | [`0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8`](https://sepolia.mantlescan.xyz/address/0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8) | Mantle Sepolia |
+| ERC-8004 IdentityRegistry | [`0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d`](https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d) | Mantle Sepolia |
 
 ---
 

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { Trade, Prices } from '../App';
 import { useTranslation } from '../i18n/TranslationContext';
 
@@ -79,7 +79,7 @@ const ActivePositions: React.FC<Props> = ({ trades, prices, newTxHash }) => {
                     </td>
                     <td style={{ padding: '0.3rem 0.5rem' }}>
                       <a
-                        href={`https://explorer.sepolia.mantle.xyz/tx/${tr.tx_hash}`}
+                        href={`https://sepolia.mantlescan.xyz/tx/${tr.tx_hash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-cyan"

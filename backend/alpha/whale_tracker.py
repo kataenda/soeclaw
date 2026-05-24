@@ -1,4 +1,4 @@
-"""
+﻿"""
 Whale Tracker — monitors Mantle Sepolia for large native MNT transfers.
 Polls new blocks every 30s and fires an alert for any tx above the threshold.
 Also tracks a watchlist of known high-value addresses.
@@ -74,7 +74,7 @@ async def whale_tracking_loop():
                     severity: str = "HIGH" if is_whale else "MEDIUM"
                     to_display = _short(to_addr_raw) if to_addr_raw else "Contract Creation"
 
-                    explorer = f"https://explorer.sepolia.mantle.xyz/tx/{tx.hash.hex()}"
+                    explorer = f"https://sepolia.mantlescan.xyz/tx/{tx.hash.hex()}"
 
                     await dispatch_alert(Alert(
                         type="WHALE",

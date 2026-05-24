@@ -1,4 +1,4 @@
-import "@nomicfoundation/hardhat-toolbox";
+﻿import "@nomicfoundation/hardhat-toolbox";
 import "dotenv/config";
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -30,8 +30,8 @@ export default {
         network: "mantleTestnet",
         chainId: 5003,
         urls: {
-          apiURL: "https://explorer.sepolia.mantle.xyz/api",
-          browserURL: "https://explorer.sepolia.mantle.xyz",
+          apiURL: "https://sepolia.mantlescan.xyz/api",
+          browserURL: "https://sepolia.mantlescan.xyz",
         },
       },
       {

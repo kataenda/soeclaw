@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 from web3 import Web3
 from dotenv import load_dotenv
@@ -8,7 +8,7 @@ load_dotenv()
 _NETWORK = os.getenv("MANTLE_NETWORK", "sepolia")
 RPC_URL = "https://rpc.mantle.xyz" if _NETWORK == "mainnet" else "https://rpc.sepolia.mantle.xyz"
 CHAIN_ID = 5000 if _NETWORK == "mainnet" else 5003
-EXPLORER_BASE = "https://explorer.mantle.xyz" if _NETWORK == "mainnet" else "https://explorer.sepolia.mantle.xyz"
+EXPLORER_BASE = "https://explorer.mantle.xyz" if _NETWORK == "mainnet" else "https://sepolia.mantlescan.xyz"
 
 CONTRACT_ADDRESS = os.getenv("MANTLE_CONTRACT_ADDRESS", "0x95877513429566993C96544B639c87E7c6965a3C")
 IDENTITY_REGISTRY_ADDRESS = os.getenv(

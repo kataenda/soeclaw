@@ -1,4 +1,4 @@
-import hre from "hardhat";
+﻿import hre from "hardhat";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -66,7 +66,7 @@ async function main() {
       AgentIdentityRegistry: {
         address: REGISTRY_ADDRESS,
         standard: "ERC-8004",
-        explorerUrl: `https://explorer.sepolia.mantle.xyz/address/${REGISTRY_ADDRESS}`,
+        explorerUrl: `https://sepolia.mantlescan.xyz/address/${REGISTRY_ADDRESS}`,
       },
     },
     agents: AGENTS.map((a, i) => ({
@@ -74,7 +74,7 @@ async function main() {
       tokenId: tokenIds[i],
       strategy: a.strategy,
       agentCardURI: `${AGENT_CARD_BASE_URL}${a.file}`,
-      explorerUrl: `https://explorer.sepolia.mantle.xyz/token/${REGISTRY_ADDRESS}?a=${tokenIds[i]}`,
+      explorerUrl: `https://sepolia.mantlescan.xyz/token/${REGISTRY_ADDRESS}?a=${tokenIds[i]}`,
     })),
   };
 
@@ -84,7 +84,7 @@ async function main() {
   );
 
   console.log("\n📄 Saved to deployment-erc8004.json");
-  console.log(`🔗 Registry: https://explorer.sepolia.mantle.xyz/address/${REGISTRY_ADDRESS}\n`);
+  console.log(`🔗 Registry: https://sepolia.mantlescan.xyz/address/${REGISTRY_ADDRESS}\n`);
 }
 
 main().catch((error) => {

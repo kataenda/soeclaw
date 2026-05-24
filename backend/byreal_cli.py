@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Byreal Skills CLI v1.0.0
 Agentic wallet economy management for SoeClaw AI on Mantle L2.
@@ -359,7 +359,7 @@ def cmd_mint(args):
         ok("Skill minted!")
         kv("Tx Hash", clr(tx, DIM))
         if tx and not tx.endswith(("_offline", "_error")):
-            kv("Explorer", f"https://explorer.sepolia.mantle.xyz/tx/{tx}")
+            kv("Explorer", f"https://sepolia.mantlescan.xyz/tx/{tx}")
         else:
             kv("Note", clr("Wallet offline — skill recorded locally", YELLOW))
     else:

@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import json
 import random
 import sys
@@ -1479,7 +1479,7 @@ async def agents_benchmark(db: Session = Depends(database.get_db)):
             "reputation":      onchain.get("reputation", 0),
             "erc8004_token_id": AGENT_TOKEN_IDS.get(agent_name),
             "registry_address": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
-            "explorer_url":    f"https://explorer.sepolia.mantle.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+            "explorer_url":    f"https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
             "network":         "Mantle Sepolia Testnet",
             "chain_id":        5003,
         })
@@ -1550,7 +1550,7 @@ async def agent_loop():
                     "msg_type": "CHAIN",
                     "tx_hash": None,
                     "explorer_url": (
-                        "https://explorer.sepolia.mantle.xyz/address/"
+                        "https://sepolia.mantlescan.xyz/address/"
                         "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d"
                     ),
                 },
@@ -1977,7 +1977,7 @@ def cfo_alpha_scorecard(db: Session = Depends(database.get_db)):
             "win_rate": 0.0, "sharpe_ratio": 0.0,
             "max_drawdown_usd": 0.0,
             "verified_onchain": 0, "total_decisions": 0,
-            "proof_url": "https://explorer.sepolia.mantle.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+            "proof_url": "https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
             "agents": [], "verdict": "INSUFFICIENT_DATA",
         }
 
@@ -2053,7 +2053,7 @@ def cfo_alpha_scorecard(db: Session = Depends(database.get_db)):
         "max_drawdown_usd": round(max_dd, 2),
         "verified_onchain": verified,
         "total_decisions": total,
-        "proof_url": "https://explorer.sepolia.mantle.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+        "proof_url": "https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
         "agents": agents_list,
         "verdict": verdict,
     }

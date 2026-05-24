@@ -1,4 +1,4 @@
-import hre from "hardhat";
+﻿import hre from "hardhat";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -81,7 +81,7 @@ async function main() {
       AgentIdentityRegistry: {
         address: registryAddress,
         standard: "ERC-8004",
-        explorerUrl: `https://explorer.sepolia.mantle.xyz/address/${registryAddress}`,
+        explorerUrl: `https://sepolia.mantlescan.xyz/address/${registryAddress}`,
       },
     },
     agents: AGENTS.map((a, i) => ({
@@ -89,7 +89,7 @@ async function main() {
       tokenId: tokenIds[i],
       strategy: a.strategy,
       agentCardURI: `${AGENT_CARD_BASE_URL}${a.file}`,
-      explorerUrl: `https://explorer.sepolia.mantle.xyz/token/${registryAddress}?a=${tokenIds[i]}`,
+      explorerUrl: `https://sepolia.mantlescan.xyz/token/${registryAddress}?a=${tokenIds[i]}`,
     })),
   };
 

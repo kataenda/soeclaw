@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from '../i18n/TranslationContext';
 
@@ -486,7 +486,7 @@ function EconomyTab() {
             const econ        = agentEconByName[agent.name];
             const tokenId     = TOKEN_IDS[agent.name];
             const explorerUrl = tokenId !== undefined
-              ? `https://explorer.sepolia.mantle.xyz/token/${REGISTRY_ADDR}?a=${tokenId}`
+              ? `https://sepolia.mantlescan.xyz/token/${REGISTRY_ADDR}?a=${tokenId}`
               : undefined;
             const intel    = AGENT_INTEL[agent.name];
             const isActive = activeIntel === agent.name;

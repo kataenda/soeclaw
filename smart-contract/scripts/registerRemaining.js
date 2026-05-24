@@ -1,4 +1,4 @@
-import hre from "hardhat";
+﻿import hre from "hardhat";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -87,7 +87,7 @@ async function main() {
   for (const r of results) {
     deployment.agents.push({
       ...r,
-      explorerUrl: `https://explorer.sepolia.mantle.xyz/token/${REGISTRY_ADDRESS}?a=${r.tokenId}`,
+      explorerUrl: `https://sepolia.mantlescan.xyz/token/${REGISTRY_ADDRESS}?a=${r.tokenId}`,
     });
   }
   fs.writeFileSync(depPath, JSON.stringify(deployment, null, 2));

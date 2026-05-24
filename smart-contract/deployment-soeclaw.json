@@ -1,4 +1,4 @@
-{
+﻿{
   "network": "mantleTestnet",
   "chainId": 5003,
   "deployedAt": "2026-05-24T00:00:00.000Z",
@@ -7,7 +7,7 @@
     "SoeClaw": {
       "address": "0x95877513429566993C96544B639c87E7c6965a3C",
       "version": "v3",
-      "explorerUrl": "https://explorer.sepolia.mantle.xyz/address/0x95877513429566993C96544B639c87E7c6965a3C",
+      "explorerUrl": "https://sepolia.mantlescan.xyz/address/0x95877513429566993C96544B639c87E7c6965a3C",
       "sourcifyUrl": "https://repo.sourcify.dev/contracts/full_match/5003/0x95877513429566993C96544B639c87E7c6965a3C/",
       "features": [
         "requestAI(symbol) — user triggers AI oracle on-chain, emits AIRequested event",

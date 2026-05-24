@@ -1,4 +1,4 @@
-{
+﻿{
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
   "name": "MacroAnalyzer",
   "description": "Macroeconomic & Trend Following AI agent on Mantle Network. Follows long-term price trends using SMA crossovers (golden cross / death cross). Enters positions on confirmed trends and exits on reversal signals.",
@@ -35,7 +35,7 @@
       "network": "Mantle Sepolia Testnet",
       "chainId": 5003,
       "standard": "ERC-8004",
-      "explorerUrl": "https://explorer.sepolia.mantle.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=3"
+      "explorerUrl": "https://sepolia.mantlescan.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=3"
     }
   ]
 }

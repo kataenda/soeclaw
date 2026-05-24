@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { API_URL } from '../config';
 import { useTranslation } from '../i18n/TranslationContext';
 
@@ -88,7 +88,7 @@ const Leaderboard: React.FC = () => {
           const oc = onchain[agent.name];
           const tokenId = TOKEN_IDS[agent.name];
           const explorerUrl = tokenId !== undefined
-            ? `https://explorer.sepolia.mantle.xyz/token/${REGISTRY}?a=${tokenId}`
+            ? `https://sepolia.mantlescan.xyz/token/${REGISTRY}?a=${tokenId}`
             : undefined;
           const rankColors = ['#f59e0b', '#94a3b8', '#cd7f32'];
 

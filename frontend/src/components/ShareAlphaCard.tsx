@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../config';
 import { useTranslation } from '../i18n/TranslationContext';
 
@@ -56,7 +56,7 @@ export default function ShareAlphaCard({ onClose }: Props) {
       `Verdict: ${VERDICT_LABEL[data.verdict] ?? data.verdict}`,
       ``,
       `Verifiable on Mantle Sepolia L2 · ERC-8004`,
-      `explorer.sepolia.mantle.xyz`,
+      `sepolia.mantlescan.xyz`,
       ``,
       `#MantleAIHackathon #MantleTuringTest #SoeClaw`,
     ].join('\n');
@@ -156,7 +156,7 @@ export default function ShareAlphaCard({ onClose }: Props) {
           {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '0.6rem' }}>
             <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
-              explorer.sepolia.mantle.xyz
+              sepolia.mantlescan.xyz
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {['#MantleAIHackathon', '#ERC8004'].map(tag => (

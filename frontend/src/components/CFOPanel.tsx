@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_URL } from '../config';
 import { useTranslation } from '../i18n/TranslationContext';
 import TxApprovalModal from './TxApprovalModal';
@@ -82,7 +82,7 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         walletAddress={walletAddress}
         onClose={() => setPendingTx(null)}
         onSuccess={(hash) => {
-          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://explorer.sepolia.mantle.xyz/tx/${hash}`, powered: true }]);
+          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://sepolia.mantlescan.xyz/tx/${hash}`, powered: true }]);
           setPendingTx(null);
         }}
       />
