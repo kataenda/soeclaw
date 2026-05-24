@@ -5,24 +5,34 @@ via subprocess calls. Returns structured JSON for AI agent consumption.
 import asyncio
 import json
 import shlex
+import subprocess
+import shutil
 from typing import Any
 
-_BYREAL_CMD  = "npx @byreal-io/byreal-cli"
-_PERPS_CMD   = "npx @byreal-io/byreal-perps-cli"
+# Resolve full npx path at startup so it works on Windows (cmd.exe PATH)
+_NPX = shutil.which("npx") or "npx"
+_BYREAL_CMD  = f'"{_NPX}" @byreal-io/byreal-cli'
+_PERPS_CMD   = f'"{_NPX}" @byreal-io/byreal-perps-cli'
+
+
+def _run_sync(cmd: str) -> dict[str, Any]:
+    """Run a Byreal CLI command synchronously. Called via asyncio.to_thread."""
+    result = subprocess.run(
+        cmd,
+        shell=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    raw = result.stdout.strip()
+    if not raw:
+        raise RuntimeError(result.stderr.strip() or f"CLI exited {result.returncode} with no output")
+    return json.loads(raw)
 
 
 async def _run(cmd: str) -> dict[str, Any]:
-    """Run a CLI command and return parsed JSON output."""
-    proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
-    raw = stdout.decode().strip()
-    if not raw:
-        raise RuntimeError(stderr.decode().strip() or "No output from CLI")
-    return json.loads(raw)
+    """Run a CLI command in a thread pool and return parsed JSON."""
+    return await asyncio.to_thread(_run_sync, cmd)
 
 
 # ── Byreal DEX (CLMM / Spot) ─────────────────────────────────────────────────

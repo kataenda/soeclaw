@@ -128,7 +128,7 @@ Edit `backend/.env`:
 PRIVATE_KEY=your_wallet_private_key_without_0x
 MANTLE_CONTRACT_ADDRESS=0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8
 IDENTITY_REGISTRY_ADDRESS=0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d
-ANTHROPIC_API_KEY=sk-ant-...
+AGENT_API_KEY=sk-ant-...
 JWT_SECRET=generate_with_python_secrets_token_hex_32
 ```
 
@@ -206,7 +206,7 @@ npm run dev
 
 ```
 PRIVATE_KEY=...
-ANTHROPIC_API_KEY=...
+AGENT_API_KEY=...
 JWT_SECRET=...  (generate: python -c "import secrets; print(secrets.token_hex(32))")
 MANTLE_CONTRACT_ADDRESS=0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8
 IDENTITY_REGISTRY_ADDRESS=0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d
@@ -252,7 +252,7 @@ function mintSkillNFT(uint256 agentId, string skillName, string metadata) → ui
 | `PRIVATE_KEY` | Yes | Wallet private key (no 0x prefix) |
 | `MANTLE_CONTRACT_ADDRESS` | Yes | SoeClaw contract address |
 | `IDENTITY_REGISTRY_ADDRESS` | Yes | ERC-8004 registry address |
-| `ANTHROPIC_API_KEY` | Recommended | Claude API for real AI decisions |
+| `AGENT_API_KEY` | Recommended | Claude API for real AI decisions |
 | `JWT_SECRET` | Yes | Random 32-byte hex for auth tokens |
 | `ALLOWED_ORIGINS` | Yes | Frontend URLs (comma-separated) |
 | `BYBIT_ENABLED` | Production | Set to `true` to enable Bybit WS |

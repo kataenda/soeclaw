@@ -129,6 +129,51 @@ def volatility_strategy(prices: list[float], change_24h: float) -> Signal:
     return Signal("HOLD", 68.0, f"Low vol ({vol_pct:.1f}%), price stable — no edge", position_size_pct=0.0)
 
 
+def apply_reputation_modifier(signal: Signal, reputation: int, onchain_trades: int) -> Signal:
+    """
+    Adjusts a strategy signal using the agent's live ERC-8004 on-chain reputation.
+    This creates the feedback loop: Mantle blockchain → agent behavior → Mantle blockchain.
+
+    Tiers:
+      reputation < 0   → conservative mode: shrink position, cap confidence
+      reputation 0–9   → neutral: no change (building track record)
+      reputation 10–19 → proven: +30% position size
+      reputation ≥ 20  → elite: up to +100% position size
+    """
+    if signal.action == "HOLD":
+        return signal  # position size is irrelevant for holds
+
+    if reputation < 0:
+        # On losing streak — reduce exposure, cap confidence
+        shrink = max(0.3, 1.0 + reputation * 0.1)   # rep=-5 → factor=0.5
+        new_pos  = round(max(2.0, signal.position_size_pct * shrink), 1)
+        new_conf = min(signal.confidence, 72.0)
+        return Signal(
+            signal.action, new_conf,
+            f"{signal.reasoning} [ERC-8004 REP:{reputation} → conservative, size {new_pos}%]",
+            signal.stop_loss_pct, signal.take_profit_pct, new_pos,
+        )
+    elif reputation >= 20:
+        # Elite — up to 2× position
+        amplify = min(2.0, 1.0 + reputation * 0.025)
+        new_pos  = round(min(40.0, signal.position_size_pct * amplify), 1)
+        return Signal(
+            signal.action, signal.confidence,
+            f"{signal.reasoning} [ERC-8004 REP:{reputation} elite → size {new_pos}%]",
+            signal.stop_loss_pct, signal.take_profit_pct, new_pos,
+        )
+    elif reputation >= 10:
+        # Proven — +30% position
+        new_pos = round(min(30.0, signal.position_size_pct * 1.3), 1)
+        return Signal(
+            signal.action, signal.confidence,
+            f"{signal.reasoning} [ERC-8004 REP:{reputation} proven → size {new_pos}%]",
+            signal.stop_loss_pct, signal.take_profit_pct, new_pos,
+        )
+    # Neutral (0–9): no change
+    return signal
+
+
 STRATEGY_MAP = {
     "AlphaQuant":    momentum_strategy,
     "WhaleWatcher":  mean_reversion_strategy,

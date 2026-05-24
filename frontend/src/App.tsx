@@ -3,13 +3,17 @@ import './index.css';
 import TerminalConsole from './components/TerminalConsole';
 import MarketChart from './components/MarketChart';
 import ActivePositions from './components/ActivePositions';
-import Leaderboard from './components/Leaderboard';
 import WalletPanel from './components/WalletPanel';
 import LoginPage from './components/LoginPage';
-import StrategyPanel from './components/StrategyPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import BottomPanel from './components/BottomPanel';
 import ByrealPanel from './components/ByrealPanel';
+import CFOPanel from './components/CFOPanel';
+import WelcomeModal from './components/WelcomeModal';
+import FinancialDashboard from './components/FinancialDashboard';
+import AlphaScorecard from './components/AlphaScorecard';
+import SentimentPanel from './components/SentimentPanel';
+import ShareAlphaCard from './components/ShareAlphaCard';
 import { useTranslation } from './i18n/TranslationContext';
 import { WS_URL } from './config';
 
@@ -47,10 +51,16 @@ function App() {
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [mobileTab, setMobileTab]           = useState<'market' | 'agents' | 'terminal'>('market');
   const [newTxHash, setNewTxHash]           = useState<string | null>(null);
+  const [showFinancial, setShowFinancial]   = useState(false);
+  const [showShareCard, setShowShareCard]   = useState(false);
   const [prices, setPrices]       = useState<Prices>({
-    'BTC/USDT': { price: 0, change_24h: 0 },
-    'ETH/USDT': { price: 0, change_24h: 0 },
-    'MNT/USDT': { price: 0, change_24h: 0 },
+    'BTC/USDT':  { price: 0, change_24h: 0 },
+    'ETH/USDT':  { price: 0, change_24h: 0 },
+    'MNT/USDT':  { price: 0, change_24h: 0 },
+    'mETH/USDT': { price: 0, change_24h: 0 },
+    'COOK/USDT': { price: 0, change_24h: 0 },
+    'FBTC/USDT': { price: 0, change_24h: 0 },
+    'WMNT/USDT': { price: 0, change_24h: 0 },
   });
 
   useEffect(() => {
@@ -146,6 +156,9 @@ function App() {
 
   return (
     <>
+      <WelcomeModal />
+      {showFinancial && <FinancialDashboard onClose={() => setShowFinancial(false)} />}
+      {showShareCard && <ShareAlphaCard onClose={() => setShowShareCard(false)} />}
       <div className="scanline-overlay"></div>
       <div className="dashboard-grid">
 
@@ -158,7 +171,7 @@ function App() {
             </div>
             <div>
               <h1 className="mono-text text-cyan" style={{ fontSize: '1.15rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
-                SOECLAW OS <span className="mono-text text-muted" style={{ fontSize: '0.68rem', fontWeight: 400 }}>v2.0</span>
+                SOECLAW <span style={{ color: '#a78bfa' }}>AI CFO</span> <span className="mono-text text-muted" style={{ fontSize: '0.68rem', fontWeight: 400 }}>v2.0</span>
               </h1>
               <p className="mono-text text-muted" style={{ fontSize: '0.68rem', marginTop: '2px' }}>{t('sys_subtitle')}</p>
             </div>
@@ -194,15 +207,31 @@ function App() {
             </div>
 
             <LanguageSwitcher />
+            <button
+              className="neon-btn"
+              onClick={() => setShowFinancial(true)}
+              aria-label="Open AI CFO Financial Dashboard"
+              style={{ fontSize: '0.68rem', borderColor: 'rgba(167,139,250,0.5)', color: '#a78bfa', fontWeight: 700 }}
+            >
+              CFO Dashboard
+            </button>
+            <button
+              className="neon-btn"
+              onClick={() => setShowShareCard(true)}
+              aria-label="Share Alpha Card"
+              style={{ fontSize: '0.68rem', borderColor: 'rgba(0,232,122,0.5)', color: '#00e87a', fontWeight: 700 }}
+            >
+              Share Alpha
+            </button>
             <span className="mono-text text-muted" style={{ fontSize: '0.72rem' }}>// {username}</span>
             <button className="neon-btn" onClick={handleLogout} aria-label="Log out" style={{ fontSize: '0.7rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
           </div>
         </div>
 
         {/* Left Sidebar */}
-        <div className={`sidebar-left${mobileTab === 'agents' ? ' tab-active' : ''}`} role="complementary" aria-label="Agent wallet and leaderboard">
+        <div className={`sidebar-left${mobileTab === 'agents' ? ' tab-active' : ''}`} role="complementary" aria-label="Agent wallet and thought stream">
           <WalletPanel />
-          <Leaderboard />
+          <AlphaScorecard />
         </div>
 
         {/* Center Main Content */}
@@ -218,13 +247,18 @@ function App() {
         </div>
 
         {/* Right Sidebar */}
-        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI thought stream and strategy">
-          <TerminalConsole thoughts={thoughts} />
-          <StrategyPanel />
+        <div className={`sidebar-right${mobileTab === 'terminal' ? ' tab-active' : ''}`} role="complementary" aria-label="AI CFO">
+          <SentimentPanel />
+          <CFOPanel />
         </div>
 
-        {/* Bottom Panel — All 6 Hackathon Tracks */}
-        <BottomPanel />
+        {/* Bottom Panel — AI Thought Stream + SOECLAW Insights */}
+        <div style={{ gridColumn: '1 / 3', display: 'flex', gap: '0.85rem', overflow: 'hidden', minHeight: 0 }}>
+          <div style={{ width: '268px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+            <TerminalConsole thoughts={thoughts} />
+          </div>
+          <BottomPanel />
+        </div>
 
         {/* Mobile Bottom Navigation */}
         <nav className="mobile-nav" aria-label="Mobile navigation">

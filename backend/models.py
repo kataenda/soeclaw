@@ -41,3 +41,24 @@ class ThoughtStream(Base):
     message = Column(String)
     msg_type = Column(String) # INFO, ALERT, ACTION, RISK
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class CFOSettings(Base):
+    __tablename__ = "cfo_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    user_key = Column(String, unique=True, index=True)
+    risk_profile = Column(String, default="balanced")
+    target_monthly_return = Column(Float, default=5.0)
+    investment_horizon = Column(String, default="medium")
+    capital_usd = Column(Float, default=10000.0)
+    advice_json = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class Budget(Base):
+    __tablename__ = "budgets"
+    id = Column(Integer, primary_key=True, index=True)
+    user_key = Column(String, index=True, default="default")
+    category = Column(String)
+    limit_usd = Column(Float)
+    spent_usd = Column(Float, default=0.0)
+    period = Column(String, default="monthly")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)

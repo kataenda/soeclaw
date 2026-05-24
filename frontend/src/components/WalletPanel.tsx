@@ -42,7 +42,7 @@ const WalletPanel: React.FC = () => {
     addr !== 'N/A' ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'N/A';
 
   return (
-    <div className="panel mono-text" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+    <div className="panel mono-text" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.65rem 1rem' }}>
       <h3 className="panel-title">{t('wallet_title')}</h3>
 
       {error && (
@@ -55,7 +55,7 @@ const WalletPanel: React.FC = () => {
       {/* Address */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{t('wallet_address_label')}</span>
-        <span className="text-cyan" style={{ fontSize: '0.8rem', fontFamily: 'monospace', letterSpacing: '0.03em' }} title={wallet?.address}>
+        <span className="text-cyan" style={{ fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.03em' }} title={wallet?.address}>
           {loading ? '…' : (wallet ? shortAddr(wallet.address) : 'N/A')}
         </span>
       </div>
@@ -64,13 +64,13 @@ const WalletPanel: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.6rem' }}>
         <div>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{t('wallet_balance')}</div>
-          <div className="text-green" style={{ fontSize: '1.1rem', fontWeight: 700, lineHeight: 1 }}>
+          <div className="text-green" style={{ fontSize: '0.88rem', fontWeight: 700, lineHeight: 1 }}>
             {loading ? '...' : (wallet?.mnt_balance ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{t('wallet_network_status')}</div>
-          <div style={{ fontSize: '0.82rem', fontWeight: 700, lineHeight: 1, color: wallet?.connected ? 'var(--accent-green)' : '#ff3366' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, lineHeight: 1, color: wallet?.connected ? 'var(--accent-green)' : '#ff3366' }}>
             {loading ? '...' : wallet?.connected ? t('wallet_online') : t('wallet_offline')}
           </div>
         </div>
@@ -79,22 +79,12 @@ const WalletPanel: React.FC = () => {
       {/* Network */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.6rem' }}>
         <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t('wallet_network')}</span>
-        <span className="text-green" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+        <span className="text-green" style={{ fontSize: '0.62rem', fontWeight: 600 }}>
           {wallet?.network ?? 'Mantle Sepolia Testnet'}
         </span>
       </div>
 
-      {/* Buttons */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <a href="https://faucet.sepolia.mantle.xyz" target="_blank" rel="noopener noreferrer" className="neon-btn"
-          aria-label="Open Mantle Sepolia faucet (opens in new tab)"
-          style={{ flex: 1, fontSize: '0.7rem', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {t('wallet_faucet')}
-        </a>
-        <button className="neon-btn" aria-label="Refresh wallet balance" style={{ flex: 1, fontSize: '0.7rem' }} onClick={fetchWallet}>
-          {t('wallet_refresh')}
-        </button>
-      </div>
+
     </div>
   );
 };

@@ -6,7 +6,7 @@ and Mantle L2-specific issues.
 import os
 import json
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("AGENT_API_KEY", "")
 
 AUDIT_SYSTEM_PROMPT = """You are a senior smart contract auditor specialising in Mantle L2.
 You audit Solidity contracts for:
@@ -97,7 +97,7 @@ def _rule_based_audit(code: str) -> dict:
 
     return {
         "risk_score": min(100, risk),
-        "summary": f"Rule-based scan found {len(issues)} issue(s). Install ANTHROPIC_API_KEY for deep AI audit.",
+        "summary": f"Rule-based scan found {len(issues)} issue(s). Install AGENT_API_KEY for deep AI audit.",
         "issues": issues,
         "gas_optimisations": [
             {"title": "Use uint128 for percentages instead of uint256", "estimated_savings": "~2000 gas/store"},

@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Hide TradingView lightweight-charts attribution */
+a[href*="tradingview.com"],
+a[href*="lightweight-charts"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* ── Design Tokens ── */
 :root {
   --bg-main:   #050508;
@@ -252,7 +260,7 @@ body {
 }
 .sidebar-left  { overflow-y: auto; }
 .main-content  { overflow: hidden; }
-.sidebar-right { overflow: hidden; }
+.sidebar-right { overflow: hidden; display: flex; flex-direction: column; grid-column: 3; grid-row: 2 / 4; }
 
 .bottom-panel {
   grid-column: 1 / -1;
@@ -334,6 +342,22 @@ body {
   }
   .mobile-nav button.active { color: var(--cyan); }
   .mobile-nav button span.nav-icon { font-size: 1rem; }
+}
+
+/* ── Skeleton loader ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.09) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s ease infinite;
+  border-radius: 4px;
 }
 
 /* ── Scrollbar ── */

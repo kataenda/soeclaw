@@ -193,6 +193,29 @@ class MantleClient:
             print(f"[MantleClient] Fatal error: {e}")
             return f"0x{'0' * 64}_error"
 
+    def log_decision_on_chain(self, agent_name: str, symbol: str, action: str, confidence: float) -> str:
+        """
+        Records ANY agent decision (including HOLD) on SoeClaw contract only.
+        Lighter than log_trade_on_chain — no reputation update for non-trade decisions.
+        """
+        if not self.connected or not PRIVATE_KEY:
+            return f"0x{'0' * 64}_offline"
+        try:
+            account = self.w3.eth.account.from_key(PRIVATE_KEY)
+            conf_int = int(confidence * 100)
+            nonce = self.w3.eth.get_transaction_count(account.address)
+            if self.contract:
+                tx_hash = self._send_tx(
+                    self.contract.functions.addTrade(agent_name, symbol, action, conf_int),
+                    account, nonce
+                )
+                print(f"[MantleClient] Decision on-chain: {agent_name} {action} {symbol} -> {tx_hash}")
+                return tx_hash
+            return f"0x{'0'*64}"
+        except Exception as e:
+            print(f"[MantleClient] log_decision error: {e}")
+            return f"0x{'0' * 64}_error"
+
     def get_agent_stats(self, agent_name: str) -> dict:
         """Returns on-chain trade count and reputation for an agent."""
         if not self.connected or not self.identity_registry:
