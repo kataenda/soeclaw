@@ -33,6 +33,15 @@ const TF_CONFIG: Record<Timeframe, { interval: number; vol: number }> = {
 
 const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'MNT/USDT', 'mETH/USDT', 'COOK/USDT', 'FBTC/USDT', 'WMNT/USDT'] as const;
 
+const BYBIT_INTERVAL: Record<Timeframe, string> = {
+  '1m':  '1',
+  '5m':  '5',
+  '15m': '15',
+  '1h':  '60',
+  '4h':  '240',
+  '1D':  'D',
+};
+
 const TICKER_EXTRA = [
   { sym: 'USDT',  price: 1.0000, chg:  0.01, color: '#26A17B' },
   { sym: 'USDC',  price: 1.0001, chg:  0.00, color: '#2775CA' },
@@ -750,10 +759,11 @@ const CandlestickChart: React.FC<CandleProps> = ({
 
 const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   useTranslation();
-  const [selected,  setSelected]  = useState<string>('BTC/USDT');
-  const [history,   setHistory]   = useState<PricePoint[]>([]);
-  const [timeframe, setTimeframe] = useState<Timeframe>('1h');
-  const [seed,      setSeed]      = useState(0);
+  const [selected,     setSelected]     = useState<string>('BTC/USDT');
+  const [history,      setHistory]      = useState<PricePoint[]>([]);
+  const [timeframe,    setTimeframe]    = useState<Timeframe>('1h');
+  const [seed,         setSeed]         = useState(0);
+  const [bybitCandles, setBybitCandles] = useState<OHLCPoint[]>([]);
   const latestPriceRef  = useRef<number>(0);
   const prevSelectedRef = useRef(selected);
   const prevTFRef       = useRef(timeframe);
@@ -786,6 +796,29 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   // Rebuild base candles when token changes
   useEffect(() => { setSeed(s => s + 1); }, [selected]);
 
+  // Fetch real OHLCV from Bybit public API; fall back to simulated if unavailable
+  useEffect(() => {
+    const sym      = selected.replace('/', '').toUpperCase();
+    const interval = BYBIT_INTERVAL[timeframe];
+    setBybitCandles([]);
+    fetch(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${sym}&interval=${interval}&limit=200`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.retCode !== 0 || !d.result?.list?.length) return;
+        const rows: OHLCPoint[] = [...d.result.list].reverse().map((row: string[]) => ({
+          time:   Math.floor(Number(row[0]) / 1000),
+          label:  '',
+          open:   parseFloat(row[1]),
+          high:   parseFloat(row[2]),
+          low:    parseFloat(row[3]),
+          close:  parseFloat(row[4]),
+          volume: parseFloat(row[5]),
+        }));
+        setBybitCandles(rows);
+      })
+      .catch(() => {});
+  }, [selected, timeframe]);
+
   // Trigger initial base build once real price arrives
   const initRef = useRef(false);
   useEffect(() => {
@@ -810,12 +843,10 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   const realCandles = useMemo(() => generateCandles(history), [history]);
 
   const candles = useMemo(() => {
-    // When baseCandles exist, use them exclusively — realCandles have 5-second timestamps
-    // that conflict with the TF-aligned grid, causing the live-tick to place the current
-    // price on a separate out-of-grid candle far from the historical candles.
-    if (baseCandles.length > 0) return baseCandles.slice(-200);
+    if (bybitCandles.length > 0) return bybitCandles.slice(-200);
+    if (baseCandles.length > 0)  return baseCandles.slice(-200);
     return realCandles.slice(-200);
-  }, [baseCandles, realCandles]);
+  }, [bybitCandles, baseCandles, realCandles]);
 
   const formatPrice = (p: number) => {
     if (p >= 1000) return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
