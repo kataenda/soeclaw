@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createChart, ColorType, CrosshairMode, CandlestickSeries, HistogramSeries, LineSeries, BarSeries, AreaSeries, BaselineSeries } from 'lightweight-charts';
 import type { Prices } from '../App';
 import { useTranslation } from '../i18n/TranslationContext';
+import { API_URL } from '../config';
 
 interface PricePoint { time: string; price: number }
 interface OHLCPoint  { time: number; label: string; open: number; close: number; high: number; low: number; volume: number }
@@ -801,7 +802,7 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
     const sym      = selected.replace('/', '').toUpperCase();
     const interval = BYBIT_INTERVAL[timeframe];
     setBybitCandles([]);
-    fetch(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${sym}&interval=${interval}&limit=200`)
+    fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`)
       .then(r => r.json())
       .then(d => {
         if (d.retCode !== 0 || !d.result?.list?.length) return;

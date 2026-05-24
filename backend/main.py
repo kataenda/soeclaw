@@ -424,6 +424,18 @@ def health():
     return {"status": "ok", "agent_running": agent_running, "bybit_connected": _bybit_connected}
 
 
+@app.get("/api/kline")
+async def proxy_kline(symbol: str, interval: str, limit: int = 200):
+    """Proxy Bybit kline to avoid browser cert/CORS issues."""
+    url = f"https://api.bybit.com/v5/market/kline?category=spot&symbol={symbol}&interval={interval}&limit={limit}"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url)
+            return r.json()
+    except Exception as e:
+        return {"retCode": -1, "retMsg": str(e), "result": {"list": []}}
+
+
 # ── AI x RWA endpoints ───────────────────────────────────────────────────────
 
 @app.get("/api/rwa/yields")
