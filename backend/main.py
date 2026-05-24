@@ -2418,7 +2418,25 @@ class CFOChatRequest(BaseModel):
 @app.post("/api/cfo/chat")
 async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     """AI CFO chat — real Claude AI with live market context, rule-based fallback."""
+    global agent_running
     msg = req.message.strip()
+    msg_lower = msg.lower()
+
+    # ── Agent control commands ────────────────────────────────────────────────
+    stop_keywords  = ["stop trading", "berhenti trading", "stop agent", "pause agent",
+                      "hentikan trading", "berhenti", "stop", "pause", "matikan agent"]
+    start_keywords = ["start trading", "mulai trading", "start agent", "resume agent",
+                      "mulai", "jalankan trading", "aktifkan agent", "start", "resume"]
+
+    if any(k in msg_lower for k in stop_keywords) and agent_running:
+        agent_running = False
+        await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": False}})
+        return {"reply": "Oke. Semua AI agent telah dihentikan. Trading dihentikan — tidak ada keputusan BUY/SELL yang akan dieksekusi sampai kamu aktifkan kembali.", "ai": True}
+
+    if any(k in msg_lower for k in start_keywords) and not agent_running:
+        agent_running = True
+        await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": True}})
+        return {"reply": "Siap. Semua AI agent diaktifkan kembali. AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager mulai scanning market.", "ai": True}
 
     # ── Live context ──────────────────────────────────────────────────────────
     btc  = price_cache.get("BTC/USDT",  {})
