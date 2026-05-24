@@ -404,7 +404,6 @@ const CandlestickChart: React.FC<CandleProps> = ({
       },
       handleScroll: true,
       handleScale: true,
-      watermark: { visible: false },
     });
     chartRef.current = chart;
 
