@@ -82,7 +82,7 @@ export default function ByrealPanel() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f7931a', boxShadow: '0 0 8px rgba(247,147,26,0.8)', animation: 'pulse 2s infinite' }} />
             <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f7931a', letterSpacing: '0.5px' }}>BYREAL HUB</span>
-            <span style={{ fontSize: '0.52rem', padding: '1px 5px', borderRadius: 3, background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.25)', color: '#00e87a' }}>DeFi Deep Dive</span>
+            <span style={{ fontSize: '0.52rem', padding: '1px 5px', borderRadius: 3, background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.25)', color: '#00e87a' }}>{t('bp_defi_tag')}</span>
           </div>
           <button onClick={load} style={{ fontSize: '0.6rem', padding: '2px 6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit' }}>↻</button>
         </div>
@@ -121,9 +121,9 @@ export default function ByrealPanel() {
             {/* Stats strip */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 3, marginBottom: 6, flexShrink: 0 }}>
               {[
-                { label: 'LONG',  value: String(longCount),  color: '#00e87a' },
-                { label: 'SHORT', value: String(shortCount), color: '#ff3366' },
-                { label: 'SCORE', value: String(avgScore),   color: avgScore >= 65 ? '#00e87a' : '#f59e0b' },
+                { label: t('bp_long'),  value: String(longCount),  color: '#00e87a' },
+                { label: t('bp_short'), value: String(shortCount), color: '#ff3366' },
+                { label: t('bp_score'), value: String(avgScore),   color: avgScore >= 65 ? '#00e87a' : '#f59e0b' },
               ].map(s => (
                 <div key={s.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 5, padding: '0.25rem', textAlign: 'center' }}>
                   <div style={{ fontSize: '0.5rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 1 }}>{s.label}</div>

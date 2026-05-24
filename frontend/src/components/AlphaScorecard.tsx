@@ -26,11 +26,11 @@ interface AlphaData {
   verdict: string;
 }
 
-const VERDICT_CFG: Record<string, { label: string; color: string }> = {
-  BEATING_MARKET:   { label: 'BEATING MARKET', color: '#00e87a' },
-  NEUTRAL:          { label: 'NEUTRAL',         color: '#f59e0b' },
-  UNDERPERFORMING:  { label: 'UNDERPERFORMING', color: '#ff3366' },
-  INSUFFICIENT_DATA:{ label: 'NO DATA YET',     color: '#6b7fa3' },
+const VERDICT_COLORS: Record<string, string> = {
+  BEATING_MARKET:   '#00e87a',
+  NEUTRAL:          '#f59e0b',
+  UNDERPERFORMING:  '#ff3366',
+  INSUFFICIENT_DATA:'#6b7fa3',
 };
 
 function useCountUpF(target: number, decimals = 2, duration = 1000) {
@@ -80,8 +80,16 @@ export default function AlphaScorecard() {
 
   if (!data || typeof data.alpha_pct !== 'number') return null;
 
+  const VERDICT_LABELS: Record<string, string> = {
+    BEATING_MARKET:    t('as_verdict_beating'),
+    NEUTRAL:           t('as_verdict_neutral'),
+    UNDERPERFORMING:   t('as_verdict_under'),
+    INSUFFICIENT_DATA: t('as_verdict_nodata'),
+  };
+
   const agents = Array.isArray(data.agents) ? data.agents : [];
-  const vc = VERDICT_CFG[data.verdict] ?? VERDICT_CFG.NEUTRAL;
+  const vcColor = VERDICT_COLORS[data.verdict] ?? VERDICT_COLORS.NEUTRAL;
+  const vcLabel = VERDICT_LABELS[data.verdict] ?? t('as_verdict_neutral');
   const alphaColor = data.alpha_pct > 0 ? '#00e87a' : data.alpha_pct < -1 ? '#ff3366' : '#f59e0b';
   const maxAgentPnl = Math.max(...agents.map(a => Math.abs(a.pnl_usd)), 1);
 
@@ -96,8 +104,8 @@ export default function AlphaScorecard() {
         </div>
         <span style={{
           fontSize: '0.56rem', padding: '1px 7px', borderRadius: 4, fontWeight: 700,
-          background: `${vc.color}15`, border: `1px solid ${vc.color}40`, color: vc.color,
-        }}>{vc.label}</span>
+          background: `${vcColor}15`, border: `1px solid ${vcColor}40`, color: vcColor,
+        }}>{vcLabel}</span>
       </div>
 
       {/* ── Alpha Number (hero) ── */}
@@ -107,7 +115,7 @@ export default function AlphaScorecard() {
           {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}%
         </div>
         <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 3 }}>
-          Verifiable on Mantle L2 · ERC-8004 · {data.verified_onchain} on-chain proofs
+          Mantle L2 · ERC-8004 · {data.verified_onchain} {t('as_onchain_proofs')}
         </div>
       </div>
 
@@ -115,7 +123,7 @@ export default function AlphaScorecard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
         {/* AI Return */}
         <div style={{ background: 'rgba(0,232,122,0.06)', border: '1px solid rgba(0,232,122,0.2)', borderRadius: 5, padding: '0.35rem 0.45rem' }}>
-          <div style={{ fontSize: '0.52rem', color: '#00e87a', letterSpacing: '0.5px', marginBottom: 2 }}>🤖 AI PORTFOLIO</div>
+          <div style={{ fontSize: '0.52rem', color: '#00e87a', letterSpacing: '0.5px', marginBottom: 2 }}>{t('as_ai_portfolio')}</div>
           <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00e87a', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>
             {aiRet >= 0 ? '+' : ''}{aiRet.toFixed(2)}%
           </div>
@@ -125,7 +133,7 @@ export default function AlphaScorecard() {
         </div>
         {/* BTC Baseline */}
         <div style={{ background: 'rgba(247,147,26,0.05)', border: '1px solid rgba(247,147,26,0.2)', borderRadius: 5, padding: '0.35rem 0.45rem' }}>
-          <div style={{ fontSize: '0.52rem', color: '#f7931a', letterSpacing: '0.5px', marginBottom: 2 }}>₿ BTC BASELINE</div>
+          <div style={{ fontSize: '0.52rem', color: '#f7931a', letterSpacing: '0.5px', marginBottom: 2 }}>{t('as_btc_baseline')}</div>
           <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f7931a', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>
             {btcRet >= 0 ? '+' : ''}{btcRet.toFixed(2)}%
           </div>
@@ -136,9 +144,9 @@ export default function AlphaScorecard() {
       {/* ── KPIs ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
         {[
-          { label: 'WIN RATE', value: `${winRate.toFixed(1)}%`, color: '#00d4ff' },
-          { label: 'SHARPE',   value: data.sharpe_ratio.toFixed(2),    color: '#a78bfa' },
-          { label: 'DECISIONS',value: `${data.total_decisions}`,        color: '#6b7fa3' },
+          { label: t('as_win_rate'),  value: `${winRate.toFixed(1)}%`,       color: '#00d4ff' },
+          { label: t('as_sharpe'),    value: data.sharpe_ratio.toFixed(2),   color: '#a78bfa' },
+          { label: t('as_decisions'), value: `${data.total_decisions}`,       color: '#6b7fa3' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ textAlign: 'center', padding: '0.3rem 0.2rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4 }}>
             <div style={{ fontSize: '0.48rem', color: 'var(--text-dim)', letterSpacing: '0.4px' }}>{label}</div>
