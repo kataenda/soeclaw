@@ -517,13 +517,18 @@ const CandlestickChart: React.FC<CandleProps> = ({
       const now         = Math.floor(Date.now() / 1000);
       const candleTime  = Math.floor(now / intervalSec) * intervalSec;
       const isCur = candleTime === last.time;
+      const nextOpen  = isCur ? last.open  : currentPrice;
+      const nextHigh  = isCur ? Math.max(last.high, currentPrice) : currentPrice;
+      const nextLow   = isCur ? Math.min(last.low,  currentPrice) : currentPrice;
       if (isOHLC) {
-        candleRef.current.update({ time: candleTime, open: isCur ? last.open : currentPrice, high: isCur ? Math.max(last.high, currentPrice) : currentPrice, low: isCur ? Math.min(last.low, currentPrice) : currentPrice, close: currentPrice });
+        candleRef.current.update({ time: candleTime, open: nextOpen, high: nextHigh, low: nextLow, close: currentPrice });
       } else if (isSingle) {
         candleRef.current.update({ time: candleTime, value: currentPrice });
       }
-      volumeRef.current?.update({ time: candleTime, value: last.volume, color: currentPrice >= last.open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)' });
+      volumeRef.current?.update({ time: candleTime, value: last.volume, color: currentPrice >= nextOpen ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)' });
       chartRef.current.timeScale().scrollToRealTime();
+      // Keep lastCandleRef current so next tick's isCur check stays accurate
+      lastCandleRef.current = { ...last, time: candleTime, open: nextOpen, high: nextHigh, low: nextLow, close: currentPrice };
     } catch (_) {}
   }, [currentPrice, timeframe, chartStyle]);
 
@@ -761,6 +766,14 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   useEffect(() => {
     if (currentPrice > 0 && !initRef.current) { initRef.current = true; setSeed(s => s + 1); }
   }, [currentPrice]);
+
+  // Auto-rebuild baseCandles every 5 min so they don't go stale
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (latestPriceRef.current > 0) setSeed(s => s + 1);
+    }, 5 * 60 * 1000);
+    return () => clearInterval(iv);
+  }, []);
 
   // Stable historical base — frozen until timeframe changes (seed only increments on TF switch or init)
   // eslint-disable-next-line react-hooks/exhaustive-deps
