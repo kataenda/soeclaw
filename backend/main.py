@@ -188,6 +188,10 @@ async def oracle_loop():
     _oracle_from_block = 0
     print("[Oracle] AI oracle loop started")
     while True:
+        if not agent_running:
+            await asyncio.sleep(10)
+            continue
+
         try:
             pending = await asyncio.to_thread(
                 mantle_client.get_pending_ai_requests, _oracle_from_block
