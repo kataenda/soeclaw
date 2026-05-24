@@ -1641,10 +1641,29 @@ async def alpha_sentiment():
     social_vol   = int(abs(btc_c) * 15000 + 50000)
     social_trend = "SPIKING" if abs(btc_c) > 4 else ("ELEVATED" if abs(btc_c) > 2 else "NORMAL")
 
+    # Claude AI sentiment analysis
     ai_read = (
         f"Sentiment {fg_label} ({fg}/100). Regime: {regime.replace('_',' ')}. "
         f"{'Increase long exposure — momentum favorable.' if fg > 60 else 'Reduce exposure — defensive posture.' if fg < 40 else 'Maintain balanced allocation — no directional edge.'}"
     )
+    if anthropic_client:
+        try:
+            signal_summary = ", ".join(f"{s['label']} {s['value']}" for s in signals)
+            def _sentiment_call():
+                return anthropic_client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    max_tokens=80,
+                    messages=[{"role": "user", "content": (
+                        f"Market sentiment analysis. Data: Fear&Greed={fg} ({fg_label}), "
+                        f"BTC={btc_c:+.2f}%, ETH={eth_c:+.2f}%, MNT={mnt_c:+.2f}%, "
+                        f"Whale={whale_dir} ({whale_count} alerts), Signals: {signal_summary}. "
+                        f"Write ONE sentence (max 15 words) of actionable trading sentiment insight."
+                    )}]
+                )
+            resp = await asyncio.to_thread(_sentiment_call)
+            ai_read = f"Sentiment {fg_label} ({fg}/100). Regime: {regime.replace('_',' ')}. {resp.content[0].text.strip()}"
+        except Exception:
+            pass
 
     return {
         "fear_greed": {"score": fg, "label": fg_label, "color": fg_color},
