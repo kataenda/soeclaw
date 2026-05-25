@@ -18,7 +18,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Byreal CLI tools (needs build-essential for better-sqlite3)
-RUN npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli @byreal-io/realclaw --build-from-source
+RUN npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli --build-from-source
+
+# Install RealClaw with invite code (set BYREAL_INVITE_CODE in Railway variables)
+ARG BYREAL_INVITE_CODE
+RUN if [ -n "$BYREAL_INVITE_CODE" ]; then \
+      npm config set //registry.npmjs.org/:_authToken "$BYREAL_INVITE_CODE" && \
+      npm install -g @byreal-io/realclaw --build-from-source || \
+      npm config set @byreal-io:registry https://npm.pkg.github.com && \
+      npm config set //npm.pkg.github.com/:_authToken "$BYREAL_INVITE_CODE" && \
+      npm install -g @byreal-io/realclaw --build-from-source || true; \
+    fi
 
 # Install Python dependencies
 COPY backend/requirements.txt .
