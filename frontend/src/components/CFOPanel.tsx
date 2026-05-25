@@ -79,8 +79,8 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
 
   const BYREAL_CONNECT_KEYWORDS = ['connect wallet', 'hubungkan wallet', 'connect byreal', 'byreal connect', 'link wallet'];
 
-  const send = useCallback(async () => {
-    const text = input.trim();
+  const sendMessage = useCallback(async (directText?: string) => {
+    const text = (directText ?? input).trim();
     if (!text || loading) return;
 
     if (BYREAL_CONNECT_KEYWORDS.some(k => text.toLowerCase().includes(k))) {
@@ -116,7 +116,10 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
       setMsgs(prev => [...prev, { role: 'ai', text: t('cfo_unreachable') }]);
     }
     setLoading(false);
-  }, [input, loading, msgs]);
+  }, [input, loading, msgs, connectToByreal, walletAddress, walletBalanceMnt, t]);
+
+  // Wrapper for input field (uses current input state)
+  const send = useCallback(() => sendMessage(), [sendMessage]);
 
   const hScore = health?.health_score ?? null;
   const hColor = hScore == null ? '#6b7fa3' : hScore >= 70 ? '#00e87a' : hScore >= 50 ? '#f59e0b' : '#ff3366';
@@ -216,9 +219,10 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
           <select
             value=""
             onChange={(e) => {
-              if (e.target.value) {
-                setInput(e.target.value);
-                e.target.value = '';
+              const val = e.target.value;
+              if (val) {
+                setInput('');
+                sendMessage(val);
               }
             }}
             style={{
@@ -256,9 +260,10 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
           <select
             value=""
             onChange={(e) => {
-              if (e.target.value) {
-                setInput(e.target.value);
-                e.target.value = '';
+              const val = e.target.value;
+              if (val) {
+                setInput('');
+                sendMessage(val);
               }
             }}
             style={{
