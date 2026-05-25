@@ -21,13 +21,13 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli --build-from-source
 
 # Install RealClaw with invite code (set BYREAL_INVITE_CODE in Railway variables)
+# Uses a temp .npmrc so @byreal-io:registry scope is NOT persisted globally
 ARG BYREAL_INVITE_CODE
 RUN if [ -n "$BYREAL_INVITE_CODE" ]; then \
-      npm config set //registry.npmjs.org/:_authToken "$BYREAL_INVITE_CODE" && \
-      npm install -g @byreal-io/realclaw --build-from-source || \
-      npm config set @byreal-io:registry https://npm.pkg.github.com && \
-      npm config set //npm.pkg.github.com/:_authToken "$BYREAL_INVITE_CODE" && \
-      npm install -g @byreal-io/realclaw --build-from-source || true; \
+      printf "@byreal-io:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n" "$BYREAL_INVITE_CODE" > /tmp/rc.npmrc && \
+      npm install -g @byreal-io/realclaw --userconfig /tmp/rc.npmrc --build-from-source || \
+      npm install -g @byreal-io/realclaw --//registry.npmjs.org/:_authToken="$BYREAL_INVITE_CODE" --build-from-source || true; \
+      rm -f /tmp/rc.npmrc; \
     fi
 
 # Install Python dependencies
