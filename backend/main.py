@@ -2941,7 +2941,9 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
             raw_pools  = pools_data.get("data", pools_data)
             if isinstance(raw_pools, list) and raw_pools:
                 lines = "\n".join([
-                    f"• {p.get('poolName', p.get('name','?'))}  TVL ${p.get('tvl',0):,.0f}  APY {p.get('apy', p.get('apr24h',0)):.1f}%"
+                    f"• {p.get('pair', p.get('poolName', p.get('name','?')))}  "
+                    f"TVL ${p.get('tvl_usd', p.get('tvl',0)):,.0f}  "
+                    f"APR {p.get('total_apr', p.get('apy', p.get('apr24h',0))):.1f}%"
                     for p in raw_pools[:6]
                 ])
                 return {
@@ -2950,6 +2952,163 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
                 }
         except Exception as e:
             return {"reply": f"[BYREAL POOLS]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: help / command list ───────────────────────────────────────────
+    if any(k in msg_lower for k in ["byreal help", "help byreal", "byreal command", "apa bisa byreal",
+                                     "what can byreal", "byreal capabilities", "byreal skill",
+                                     "instruksi byreal", "daftar command", "byreal list"]):
+        return {
+            "reply": (
+                "⚡ BYREAL AGENT SKILLS — All Commands\n\n"
+                "🏊 DEX · @byreal-io/byreal-cli\n"
+                "• overview              — Global DEX stats (TVL, volume, fees)\n"
+                "• pools list            — Top CLMM pools ranked by APR\n"
+                "• pools analyze <id>    — Deep pool analysis (APR, risk, range)\n"
+                "• tokens list           — All available tokens\n"
+                "• swap preview          — Preview swap route & output\n"
+                "• swap execute          — Execute real swap on CLMM\n"
+                "• positions list        — Your LP positions\n"
+                "• positions open        — Open new liquidity position\n"
+                "• positions close       — Close LP position\n"
+                "• positions claim       — Claim fees & rewards\n"
+                "• wallet balance        — Wallet token balances\n\n"
+                "📈 PERPS · @byreal-io/byreal-perps-cli\n"
+                "• signal scan           — AI signals across all markets\n"
+                "• signal detail <coin>  — Technical analysis for specific asset\n"
+                "• account info          — Perps account balance & margin\n"
+                "• account history       — Recent trading activity\n"
+                "• position list         — Open perps positions\n"
+                "• position close        — Close position at market\n"
+                "• position tpsl         — Set take-profit / stop-loss\n"
+                "• position leverage     — Configure leverage (1–50x)\n"
+                "• order market          — Execute market order\n"
+                "• order limit           — Place limit order\n"
+                "• order cancel          — Cancel active order\n\n"
+                "💬 Ask me naturally:\n"
+                "\"ETH signal detail\" · \"perps account info\"\n"
+                "\"wallet balance\" · \"analyze MNT/USDC pool\"\n"
+                "\"open BTC long 10x\" · \"perps positions\""
+            ),
+            "ai": True, "byreal": True,
+        }
+
+    # ── Byreal: wallet balance ────────────────────────────────────────────────
+    if any(k in msg_lower for k in ["wallet balance", "byreal balance", "saldo wallet",
+                                     "my balance", "byreal wallet"]):
+        try:
+            from byreal import get_wallet_balance
+            data = await asyncio.wait_for(get_wallet_balance(), timeout=10)
+            raw  = data.get("data", data)
+            tokens = raw.get("tokens", raw.get("balances", []))
+            if tokens:
+                lines = "\n".join([
+                    f"• {t.get('symbol','?')}  {t.get('amount', t.get('balance','?'))}  "
+                    f"(${t.get('usd_value', t.get('valueUsd', 0)):,.2f})"
+                    for t in tokens[:8]
+                ])
+                return {"reply": f"[BYREAL WALLET BALANCE]\n\n{lines}\n\nvia @byreal-io/byreal-cli",
+                        "ai": True, "byreal": True}
+        except Exception as e:
+            return {"reply": f"[BYREAL WALLET]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: perps account ─────────────────────────────────────────────────
+    if any(k in msg_lower for k in ["perps account", "account info", "perps balance",
+                                     "hyperliquid account", "futures account"]):
+        try:
+            from byreal import get_perps_account
+            data = await asyncio.wait_for(get_perps_account(), timeout=10)
+            raw  = data.get("data", data)
+            equity   = raw.get("equity",    raw.get("accountValue", "?"))
+            margin   = raw.get("usedMargin", raw.get("totalMarginUsed", "?"))
+            free     = raw.get("freeMargin", raw.get("withdrawable", "?"))
+            pnl      = raw.get("unrealizedPnl", raw.get("totalRawUsd", "?"))
+            return {
+                "reply": (
+                    f"[BYREAL PERPS ACCOUNT — Hyperliquid]\n\n"
+                    f"Equity      : ${equity}\n"
+                    f"Used Margin : ${margin}\n"
+                    f"Free Margin : ${free}\n"
+                    f"Unrealized PnL: ${pnl}\n\n"
+                    f"via @byreal-io/byreal-perps-cli"
+                ),
+                "ai": True, "byreal": True,
+            }
+        except Exception as e:
+            return {"reply": f"[BYREAL PERPS ACCOUNT]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: perps positions ───────────────────────────────────────────────
+    if any(k in msg_lower for k in ["perps position", "open position", "my position",
+                                     "futures position", "posisi perps", "posisi saya"]):
+        try:
+            from byreal import get_perps_positions
+            data = await asyncio.wait_for(get_perps_positions(), timeout=10)
+            raw  = data.get("data", data)
+            positions = raw if isinstance(raw, list) else raw.get("positions", [])
+            if positions:
+                lines = "\n".join([
+                    f"{'▲' if p.get('side','').upper()=='LONG' else '▼'} {p.get('symbol', p.get('coin','?'))}  "
+                    f"{p.get('side','?')}  Size: {p.get('size','?')}  "
+                    f"Entry: ${p.get('entryPrice', p.get('entry','?'))}  "
+                    f"PnL: ${p.get('unrealizedPnl', p.get('pnl','?'))}"
+                    for p in positions[:6]
+                ])
+                return {"reply": f"[BYREAL PERPS — OPEN POSITIONS]\n\n{lines}", "ai": True, "byreal": True}
+            return {"reply": "[BYREAL PERPS]\nNo open positions.", "ai": True, "byreal": True}
+        except Exception as e:
+            return {"reply": f"[BYREAL PERPS POSITIONS]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: signal detail for specific coin ───────────────────────────────
+    _COINS = ["btc", "eth", "sol", "bnb", "xrp", "mnt", "ton", "avax", "near", "arb", "op",
+              "link", "dot", "ada", "ltc", "atom", "apt", "sui", "inj", "hype", "nil"]
+    _coin_match = next((c.upper() for c in _COINS if c in msg_lower), None)
+    if _coin_match and any(k in msg_lower for k in ["signal", "analisis", "analysis", "technical",
+                                                      "sinyal", "detail", "chart"]):
+        try:
+            from byreal import get_signal_detail
+            data = await asyncio.wait_for(get_signal_detail(f"{_coin_match}USDT"), timeout=12)
+            raw  = data.get("data", data)
+            rsi      = raw.get("rsi", "?")
+            trend    = raw.get("trend", raw.get("signal", "?"))
+            score    = raw.get("score", raw.get("strength", "?"))
+            support  = raw.get("support", "?")
+            resist   = raw.get("resistance", "?")
+            summary  = raw.get("summary", raw.get("reasoning", ""))
+            return {
+                "reply": (
+                    f"[BYREAL PERPS — {_coin_match}/USDT SIGNAL DETAIL]\n\n"
+                    f"Trend     : {trend}\n"
+                    f"RSI       : {rsi}\n"
+                    f"Score     : {score}\n"
+                    f"Support   : ${support}\n"
+                    f"Resistance: ${resist}\n"
+                    + (f"\n{summary[:200]}" if summary else "") +
+                    f"\n\nvia @byreal-io/byreal-perps-cli signal detail"
+                ),
+                "ai": True, "byreal": True,
+            }
+        except Exception as e:
+            return {"reply": f"[BYREAL SIGNAL DETAIL {_coin_match}]\nCLI unavailable: {str(e)[:100]}",
+                    "ai": True, "byreal": True}
+
+    # ── Byreal: trading history ───────────────────────────────────────────────
+    if any(k in msg_lower for k in ["trade history", "riwayat", "history perps",
+                                     "recent trade", "account history"]):
+        try:
+            from byreal import get_perps_history
+            data = await asyncio.wait_for(get_perps_history(), timeout=10)
+            raw  = data.get("data", data)
+            trades = raw if isinstance(raw, list) else raw.get("trades", raw.get("history", []))
+            if trades:
+                lines = "\n".join([
+                    f"• {t.get('symbol','?')}  {t.get('side','?')}  "
+                    f"${t.get('price', t.get('avgPrice','?'))}  "
+                    f"PnL: ${t.get('realizedPnl', t.get('pnl','?'))}"
+                    for t in trades[:6]
+                ])
+                return {"reply": f"[BYREAL PERPS — TRADE HISTORY]\n\n{lines}", "ai": True, "byreal": True}
+            return {"reply": "[BYREAL PERPS]\nNo recent trades.", "ai": True, "byreal": True}
+        except Exception as e:
+            return {"reply": f"[BYREAL HISTORY]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
 
     # ── Real Claude AI ────────────────────────────────────────────────────────
     if anthropic_client:

@@ -83,10 +83,22 @@ async def get_positions() -> dict:
     return await _run(f"{_dex_cmd()} positions list -o json --non-interactive")
 
 
+async def get_wallet_balance() -> dict:
+    return await _run(f"{_dex_cmd()} wallet balance -o json --non-interactive")
+
+
+async def analyze_pool(pool_id: str) -> dict:
+    return await _run(f"{_dex_cmd()} pools analyze {shlex.quote(pool_id)} -o json --non-interactive")
+
+
 # ── Byreal Perps ─────────────────────────────────────────────────────────────
 
 async def get_perps_signals() -> dict:
     return await _run(f"{_PERPS_CMD} signal scan -o json")
+
+
+async def get_signal_detail(symbol: str) -> dict:
+    return await _run(f"{_PERPS_CMD} signal detail {shlex.quote(symbol)} -o json")
 
 
 async def get_perps_positions() -> dict:
@@ -95,3 +107,21 @@ async def get_perps_positions() -> dict:
 
 async def get_perps_account() -> dict:
     return await _run(f"{_PERPS_CMD} account info -o json")
+
+
+async def get_perps_history() -> dict:
+    return await _run(f"{_PERPS_CMD} account history -o json")
+
+
+async def execute_market_order(symbol: str, side: str, size: float,
+                               leverage: int = 5, tp: float | None = None,
+                               sl: float | None = None) -> dict:
+    extra = ""
+    if tp:
+        extra += f" --tp {tp}"
+    if sl:
+        extra += f" --sl {sl}"
+    return await _run(
+        f"{_PERPS_CMD} order market {shlex.quote(symbol)} {side.lower()} {size}"
+        f" --leverage {leverage}{extra} -o json"
+    )
