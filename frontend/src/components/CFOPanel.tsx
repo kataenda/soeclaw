@@ -35,9 +35,59 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
     setAiPowered(true);
   }, [walletGreeting]);
 
+  const connectToByreal = useCallback(async () => {
+    setInput('');
+    setMsgs(prev => [...prev, { role: 'user', text: 'Connect wallet to Byreal' }]);
+    setLoading(true);
+    try {
+      let addr = walletAddress;
+      if (!addr) {
+        const eth = (window as any).ethereum;
+        if (!eth) {
+          setMsgs(prev => [...prev, { role: 'ai', text: '❌ MetaMask not found. Install MetaMask to connect.' }]);
+          setLoading(false);
+          return;
+        }
+        const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+        addr = accounts[0];
+      }
+      const res = await fetch(`${API_URL}/api/byreal/wallet/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: addr }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const tvl = data.dex_tvl > 0 ? `$${(data.dex_tvl / 1_000_000).toFixed(2)}M` : '—';
+        const vol = data.dex_volume_24h > 0 ? `$${(data.dex_volume_24h / 1_000_000).toFixed(2)}M` : '—';
+        setMsgs(prev => [...prev, {
+          role: 'ai',
+          text: `✅ Wallet connected to Byreal!\n\n🔗 ${addr.slice(0,6)}…${addr.slice(-4)}\n⚡ Status: Active\n📊 DEX TVL: ${tvl}\n📈 Vol 24h: ${vol}\n🏊 Pools: ${data.dex_pools}\n\nAgent will now route swaps through your wallet on Byreal CLMM DEX.`,
+          powered: true,
+          byreal: true,
+        }]);
+        setAiPowered(true);
+      } else {
+        setMsgs(prev => [...prev, { role: 'ai', text: `❌ Byreal connection failed: ${data.error}` }]);
+      }
+    } catch (err: any) {
+      const msg = err.code === 4001 ? 'Wallet connection cancelled.' : (err.message ?? 'Connection error');
+      setMsgs(prev => [...prev, { role: 'ai', text: `❌ ${msg}` }]);
+    }
+    setLoading(false);
+  }, [walletAddress]);
+
+  const BYREAL_CONNECT_KEYWORDS = ['connect wallet', 'hubungkan wallet', 'connect byreal', 'byreal connect', 'link wallet'];
+
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
+
+    if (BYREAL_CONNECT_KEYWORDS.some(k => text.toLowerCase().includes(k))) {
+      await connectToByreal();
+      return;
+    }
+
     setInput('');
     const userMsg: ChatMsg = { role: 'user', text };
     setMsgs(prev => [...prev, userMsg]);
@@ -74,7 +124,7 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
   const regimeColor = regime === 'RISK_OFF' ? '#ff3366' : regime === 'RISK_ON' ? '#00e87a' : '#f59e0b';
 
   const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4')];
-  const BYREAL_QUICK = ['Byreal perps signals', 'Swap USDT → MNT preview', 'Top CLMM pools'];
+  const BYREAL_QUICK = ['Byreal perps signals', 'Swap USDT → MNT preview', 'Top CLMM pools', 'Connect Byreal'];
 
   return (
     <>

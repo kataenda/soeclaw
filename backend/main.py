@@ -1052,6 +1052,37 @@ async def byreal_swap_preview(from_token: str = "SOL", to_token: str = "USDC", a
         return {"success": False, "error": str(e)}
 
 
+class ByrealWalletRequest(BaseModel):
+    wallet_address: str
+
+@app.post("/api/byreal/wallet/register")
+async def byreal_wallet_register(req: ByrealWalletRequest):
+    """Register user wallet with Byreal Skills registry for agent attribution."""
+    addr = req.wallet_address
+    try:
+        from byreal import get_dex_overview
+        overview = await asyncio.wait_for(get_dex_overview(), timeout=10)
+        dex = overview.get("data", {})
+        tvl   = dex.get("tvl", dex.get("totalTvl", 0))
+        pools = dex.get("pools_count", dex.get("poolCount", "—"))
+        vol   = dex.get("volume_24h_usd", dex.get("volume24h", 0))
+    except Exception:
+        tvl, pools, vol = 0, "—", 0
+
+    # Persist wallet in BYREAL_SKILLS_REGISTRY for agent attribution
+    for agent in BYREAL_SKILLS_REGISTRY["agents"]:
+        agent["wallet"]["address"] = addr
+
+    return {
+        "success": True,
+        "wallet": addr,
+        "byreal_status": "connected",
+        "dex_tvl": tvl,
+        "dex_pools": pools,
+        "dex_volume_24h": vol,
+    }
+
+
 class SwapExecuteRequest(BaseModel):
     from_token: str
     to_token: str
