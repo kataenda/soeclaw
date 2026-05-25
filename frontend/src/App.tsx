@@ -275,10 +275,7 @@ function App() {
         <div className={`main-content${mobileTab === 'market' ? ' tab-active' : ''}`} role="main" aria-label="Market charts and positions">
           {/* Charts column */}
           <div style={{ display: 'flex', flex: 1, flexDirection: 'row', gap: '0.85rem', minHeight: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: '0.85rem', minWidth: 0, overflow: 'hidden' }}>
-              <MarketChart prices={prices} bybitConnected={bybitConnected} />
-              <ActivePositions trades={trades} prices={prices} newTxHash={newTxHash} />
-            </div>
+            <MarketChart prices={prices} bybitConnected={bybitConnected} />
             <ByrealPanel />
           </div>
         </div>
@@ -293,12 +290,13 @@ function App() {
           />
         </div>
 
-        {/* Bottom Panel — AI Thought Stream + SOECLAW Insights */}
+        {/* Bottom Panel — AI Thought Stream + SOECLAW Insights + Live Positions */}
         <div style={{ gridColumn: '1 / 3', display: 'flex', gap: '0.85rem', overflow: 'hidden', minHeight: 0 }}>
           <div style={{ width: '268px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             <TerminalConsole thoughts={thoughts} />
           </div>
           <BottomPanel />
+          <ActivePositions trades={trades} prices={prices} newTxHash={newTxHash} />
         </div>
 
         {/* Mobile Bottom Navigation */}
