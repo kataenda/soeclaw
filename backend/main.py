@@ -2812,6 +2812,59 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     capital  = settings.capital_usd if settings else 10000
     profile  = settings.risk_profile if settings else "balanced"
 
+    # ── Byreal live data injection ────────────────────────────────────────────
+    byreal_context = ""
+    byreal_keywords = ["perps", "signal", "signals", "swap", "pool", "pools",
+                       "liquidity", "byreal", "clmm", "futures", "perpetual",
+                       "long", "short", "lp", "trade byreal", "realclaw"]
+    if any(k in msg_lower for k in byreal_keywords):
+        try:
+            if any(k in msg_lower for k in ["perps", "signal", "signals", "futures", "perpetual", "long", "short"]):
+                from byreal import get_perps_signals
+                sig_data = await asyncio.wait_for(get_perps_signals(), timeout=10)
+                raw_sig  = sig_data.get("data", sig_data)
+                all_sigs = [
+                    *raw_sig.get("signals", {}).get("conservative", []),
+                    *raw_sig.get("signals", {}).get("moderate",     []),
+                    *raw_sig.get("signals", {}).get("aggressive",   []),
+                ]
+                if all_sigs:
+                    sig_lines = "\n".join([
+                        f"  • {s.get('coin','?')} {s.get('direction','?')} @ ${s.get('price','?')} | RSI {s.get('rsi','?')} | Score {s.get('score','?')}"
+                        for s in all_sigs[:8]
+                    ])
+                    byreal_context += f"\n=== BYREAL PERPS SIGNALS (LIVE via byreal-perps-cli) ===\n{sig_lines}\n"
+
+            if any(k in msg_lower for k in ["swap", "exchange", "tukar", "beli via byreal", "jual via byreal"]):
+                token_map = {"btc": "BTC", "eth": "ETH", "mnt": "MNT", "sol": "SOL", "usdt": "USDT"}
+                found = [v for k, v in token_map.items() if k in msg_lower]
+                from_t, to_t = (found[0], found[1]) if len(found) >= 2 else ("USDT", "MNT")
+                from byreal import get_swap_preview
+                prev_data = await asyncio.wait_for(get_swap_preview(from_t, to_t, 100.0), timeout=10)
+                raw_prev  = prev_data.get("data", prev_data)
+                out_amt   = raw_prev.get("outputAmount", raw_prev.get("out_amount", raw_prev.get("amountOut", "N/A")))
+                route     = raw_prev.get("route", raw_prev.get("pool", f"{from_t}-{to_t}"))
+                byreal_context += (
+                    f"\n=== BYREAL SWAP PREVIEW (LIVE via byreal-cli) ===\n"
+                    f"Swap 100 {from_t} → {to_t}\n"
+                    f"Output  : {out_amt} {to_t}\n"
+                    f"Route   : {route}\n"
+                    f"Slippage: 0.5%\n"
+                )
+
+            if any(k in msg_lower for k in ["pool", "pools", "liquidity", "clmm", "lp"]):
+                from byreal import get_pools
+                pools_data = await asyncio.wait_for(get_pools(), timeout=10)
+                raw_pools  = pools_data.get("data", pools_data)
+                if isinstance(raw_pools, list) and raw_pools:
+                    pool_lines = "\n".join([
+                        f"  • {p.get('poolName', p.get('name','?'))} | TVL ${p.get('tvl',0):,.0f} | APY {p.get('apy', p.get('apr24h',0)):.1f}%"
+                        for p in raw_pools[:5]
+                    ])
+                    byreal_context += f"\n=== BYREAL CLMM POOLS (LIVE via byreal-cli) ===\n{pool_lines}\n"
+        except Exception as _be:
+            byreal_context += f"\n=== BYREAL DATA ===\n(CLI unavailable: {str(_be)[:80]})\n"
+
     # ── Real Claude AI ────────────────────────────────────────────────────────
     if anthropic_client:
         # Get wallet address from private key
@@ -2891,6 +2944,7 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
             "• RiskManager: kontrol risiko, volatilitas, circuit breaker\n"
             "Setiap keputusan BUY/SELL/HOLD direkam di Mantle Sepolia via ERC-8004.\n"
             "\nJIKA USER BERTANYA 'di mana X?', arahkan ke panel/tab yang tepat di atas."
+            + (f"\n{byreal_context}" if byreal_context else "")
         )
 
         history = [

@@ -4,7 +4,7 @@ import { useTranslation } from '../i18n/TranslationContext';
 import TxApprovalModal from './TxApprovalModal';
 import type { TxData } from './TxApprovalModal';
 
-interface ChatMsg { role: 'user' | 'ai'; text: string; powered?: boolean }
+interface ChatMsg { role: 'user' | 'ai'; text: string; powered?: boolean; byreal?: boolean }
 
 interface Props {
   walletAddress?: string;
@@ -59,7 +59,8 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
       });
       const data = await res.json();
       if (data.ai === true) setAiPowered(true);
-      setMsgs(prev => [...prev, { role: 'ai', text: data.reply, powered: data.ai === true }]);
+      const isByreal = data.reply?.includes('BYREAL') || data.reply?.includes('byreal') || data.reply?.includes('perps-cli') || data.reply?.includes('byreal-cli');
+      setMsgs(prev => [...prev, { role: 'ai', text: data.reply, powered: data.ai === true, byreal: isByreal }]);
       if (data.tx_data) setPendingTx(data.tx_data);
     } catch {
       setMsgs(prev => [...prev, { role: 'ai', text: t('cfo_unreachable') }]);
@@ -73,6 +74,7 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
   const regimeColor = regime === 'RISK_OFF' ? '#ff3366' : regime === 'RISK_ON' ? '#00e87a' : '#f59e0b';
 
   const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4')];
+  const BYREAL_QUICK = ['Byreal perps signals', 'Swap USDT → MNT preview', 'Top CLMM pools'];
 
   return (
     <>
@@ -120,9 +122,16 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         {msgs.map((m, i) => (
           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
             {m.role === 'ai' && (
-              <span style={{ fontSize: '0.5rem', color: m.powered ? '#a78bfa' : '#4b5a72', marginBottom: '2px', paddingLeft: '2px' }}>
-                {m.powered ? 'Claude AI' : 'rule-based'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: '2px', paddingLeft: '2px' }}>
+                <span style={{ fontSize: '0.5rem', color: m.powered ? '#a78bfa' : '#4b5a72' }}>
+                  {m.powered ? 'Claude AI' : 'rule-based'}
+                </span>
+                {m.byreal && (
+                  <span style={{ fontSize: '0.48rem', padding: '1px 4px', borderRadius: 3, background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.35)', color: '#f7931a', fontWeight: 700 }}>
+                    ⚡ Byreal
+                  </span>
+                )}
+              </div>
             )}
             <div style={{
               maxWidth: '90%',
@@ -153,11 +162,18 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
       {/* Quick prompts */}
       <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', flexShrink: 0 }}>
         {QUICK.map(q => (
-          <button key={q} onClick={() => { setInput(q); }} style={{
+          <button key={q} onClick={() => setInput(q)} style={{
             fontSize: '0.55rem', padding: '0.2rem 0.45rem', borderRadius: 4, cursor: 'pointer',
             background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)',
             color: '#a78bfa', fontFamily: 'JetBrains Mono, monospace',
           }}>{q}</button>
+        ))}
+        {BYREAL_QUICK.map(q => (
+          <button key={q} onClick={() => setInput(q)} style={{
+            fontSize: '0.55rem', padding: '0.2rem 0.45rem', borderRadius: 4, cursor: 'pointer',
+            background: 'rgba(247,147,26,0.08)', border: '1px solid rgba(247,147,26,0.25)',
+            color: '#f7931a', fontFamily: 'JetBrains Mono, monospace',
+          }}>⚡ {q}</button>
         ))}
       </div>
 
