@@ -209,22 +209,87 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         <div ref={endRef} />
       </div>
 
-      {/* Quick prompts */}
-      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', flexShrink: 0 }}>
-        {QUICK.map(q => (
-          <button key={q} onClick={() => setInput(q)} style={{
-            fontSize: '0.55rem', padding: '0.2rem 0.45rem', borderRadius: 4, cursor: 'pointer',
-            background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)',
-            color: '#a78bfa', fontFamily: 'JetBrains Mono, monospace',
-          }}>{q}</button>
-        ))}
-        {BYREAL_QUICK.map(q => (
-          <button key={q} onClick={() => setInput(q)} style={{
-            fontSize: '0.55rem', padding: '0.2rem 0.45rem', borderRadius: 4, cursor: 'pointer',
-            background: 'rgba(247,147,26,0.08)', border: '1px solid rgba(247,147,26,0.25)',
-            color: '#f7931a', fontFamily: 'JetBrains Mono, monospace',
-          }}>⚡ {q}</button>
-        ))}
+      {/* Quick prompts — Dropdowns */}
+      <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+        {/* CFO Commands Dropdown */}
+        <div style={{ position: 'relative', flex: 1 }}>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) {
+                setInput(e.target.value);
+                e.target.value = '';
+              }
+            }}
+            style={{
+              width: '100%',
+              fontSize: '0.58rem',
+              padding: '0.3rem 1.4rem 0.3rem 0.45rem',
+              borderRadius: 5,
+              cursor: 'pointer',
+              background: 'rgba(167,139,250,0.08)',
+              border: '1px solid rgba(167,139,250,0.25)',
+              color: '#a78bfa',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 600,
+              outline: 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a78bfa' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.4rem center',
+            }}
+          >
+            <option value="" disabled hidden style={{ background: '#0d1117', color: '#6b7fa3' }}>
+              CFO Commands
+            </option>
+            {QUICK.map(q => (
+              <option key={q} value={q} style={{ background: '#0d1117', color: '#a78bfa', padding: '4px' }}>
+                {q}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Byreal CLI Dropdown */}
+        <div style={{ position: 'relative', flex: 1 }}>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) {
+                setInput(e.target.value);
+                e.target.value = '';
+              }
+            }}
+            style={{
+              width: '100%',
+              fontSize: '0.58rem',
+              padding: '0.3rem 1.4rem 0.3rem 0.45rem',
+              borderRadius: 5,
+              cursor: 'pointer',
+              background: 'rgba(247,147,26,0.06)',
+              border: '1px solid rgba(247,147,26,0.25)',
+              color: '#f7931a',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 600,
+              outline: 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f7931a' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.4rem center',
+            }}
+          >
+            <option value="" disabled hidden style={{ background: '#0d1117', color: '#6b7fa3' }}>
+              Byreal CLI
+            </option>
+            {BYREAL_QUICK.map(q => (
+              <option key={q} value={q} style={{ background: '#0d1117', color: '#f7931a', padding: '4px' }}>
+                {q}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Input */}
