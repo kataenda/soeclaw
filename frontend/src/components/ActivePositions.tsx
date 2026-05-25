@@ -78,15 +78,17 @@ const ActivePositions: React.FC<Props> = ({ trades, prices, newTxHash }) => {
                       {currentPriceStr}
                     </td>
                     <td style={{ padding: '0.3rem 0.5rem' }}>
-                      <a
-                        href={`https://sepolia.mantlescan.xyz/tx/${tr.tx_hash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-cyan"
-                        style={{ textDecoration: 'none' }}
-                      >
-                        {tr.tx_hash.slice(0, 6)}...{tr.tx_hash.slice(-4)}
-                      </a>
+                      {tr.tx_hash ? (
+                        <a
+                          href={`https://sepolia.mantlescan.xyz/tx/${tr.tx_hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan"
+                          style={{ textDecoration: 'none' }}
+                        >
+                          {tr.tx_hash.slice(0, 6)}...{tr.tx_hash.slice(-4)}
+                        </a>
+                      ) : '—'}
                     </td>
                     <td style={{ padding: '0.3rem 0.5rem', textAlign: 'right', color: pnlColor, fontWeight: 'bold' }}>
                       {pnl === null ? '—' : `${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%`}
