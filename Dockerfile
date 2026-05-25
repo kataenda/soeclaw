@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Byreal CLI tools (needs build-essential for better-sqlite3)
-RUN npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli --build-from-source
+RUN npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli @byreal-io/realclaw --build-from-source
 
 # Install Python dependencies
 COPY backend/requirements.txt .

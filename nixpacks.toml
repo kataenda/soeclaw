@@ -5,7 +5,7 @@ nixPkgs = ["python310", "python310Packages.pip", "nodejs_20"]
 cmds = [
   "python3.10 -m pip install --upgrade pip",
   "python3.10 -m pip install -r backend/requirements.txt",
-  "npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli"
+  "npm install -g @byreal-io/byreal-cli @byreal-io/byreal-perps-cli @byreal-io/realclaw"
 ]
 
 [start]
