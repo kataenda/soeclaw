@@ -19,19 +19,6 @@ const fmtPrice = (p: string) => {
     : n >= 1 ? `$${n.toFixed(3)}` : `$${n.toFixed(5)}`;
 };
 
-const MOCK_LP: PoolItem[] = [
-  { poolName: 'MNT/USDT',  tvl: 12480, apy: 18.4, status: 'in-range'  },
-  { poolName: 'ETH/USDT',  tvl: 31200, apy: 9.7,  status: 'in-range'  },
-  { poolName: 'MNT/ETH',   tvl: 8740,  apy: 24.1, status: 'out-range' },
-];
-
-const DEMO_SIGNALS: PerpSignal[] = [
-  { coin: 'BTCUSDT', direction: 'Long',  price: '104850.00', rsi: 52, score: 78 },
-  { coin: 'ETHUSDT', direction: 'Short', price: '2486.50',   rsi: 68, score: 63 },
-  { coin: 'MNTUSDT', direction: 'Long',  price: '0.6481',    rsi: 38, score: 71 },
-  { coin: 'SOLUSDT', direction: 'Long',  price: '148.20',    rsi: 44, score: 66 },
-  { coin: 'BNBUSDT', direction: 'Short', price: '641.30',    rsi: 72, score: 55 },
-];
 
 export default function ByrealPanel() {
   const { t } = useTranslation();
@@ -99,11 +86,9 @@ export default function ByrealPanel() {
     return () => clearInterval(iv);
   }, []);
 
-  const displaySignals = signals.length > 0 ? signals : DEMO_SIGNALS;
-  const displayPools   = pools.length > 0 ? pools : MOCK_LP;
-  const longCount      = displaySignals.filter(s => s.direction === 'Long').length;
-  const shortCount     = displaySignals.filter(s => s.direction === 'Short').length;
-  const avgScore       = displaySignals.length ? Math.round(displaySignals.reduce((s, x) => s + x.score, 0) / displaySignals.length) : 0;
+  const longCount  = signals.filter(s => s.direction === 'Long').length;
+  const shortCount = signals.filter(s => s.direction === 'Short').length;
+  const avgScore   = signals.length ? Math.round(signals.reduce((s, x) => s + x.score, 0) / signals.length) : 0;
   const totalSkills    = agents.reduce((s, a) => s + a.skills.length, 0);
 
   return (
@@ -168,10 +153,15 @@ export default function ByrealPanel() {
 
             {/* Signals */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {displaySignals.map((s, i) => <SignalCard key={i} signal={s} />)}
+              {signals.map((s, i) => <SignalCard key={i} signal={s} />)}
               {signalsErr && (
-                <div style={{ fontSize: '0.55rem', color: 'rgba(255,147,26,0.55)', textAlign: 'center', padding: '0.3rem', background: 'rgba(247,147,26,0.04)', border: '1px solid rgba(247,147,26,0.1)', borderRadius: 4 }}>
-                  ⚠ Live CLI unavailable — showing demo signals
+                <div style={{ fontSize: '0.55rem', color: 'rgba(255,51,102,0.6)', textAlign: 'center', padding: '0.5rem', background: 'rgba(255,51,102,0.04)', border: '1px solid rgba(255,51,102,0.12)', borderRadius: 4 }}>
+                  ⚠ Byreal Perps CLI unavailable
+                </div>
+              )}
+              {!signalsErr && signals.length === 0 && (
+                <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textAlign: 'center', padding: '0.5rem' }}>
+                  Fetching live signals…
                 </div>
               )}
             </div>
@@ -212,7 +202,12 @@ export default function ByrealPanel() {
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {displayPools.map((lp, i) => {
+                {pools.length === 0 && (
+                  <div style={{ fontSize: '0.55rem', color: poolsErr ? 'rgba(255,51,102,0.6)' : 'var(--text-dim)', padding: '0.35rem', textAlign: 'center', background: poolsErr ? 'rgba(255,51,102,0.04)' : 'transparent', border: poolsErr ? '1px solid rgba(255,51,102,0.12)' : 'none', borderRadius: 4 }}>
+                    {poolsErr ? '⚠ Byreal DEX CLI unavailable' : 'Fetching pools…'}
+                  </div>
+                )}
+                {pools.map((lp, i) => {
                   const name   = lp.poolName ?? lp.name ?? `Pool ${i + 1}`;
                   const apyVal = lp.apy ?? lp.apr24h ?? 0;
                   const inRange = (lp.status ?? 'in-range') !== 'out-range';
@@ -254,23 +249,9 @@ export default function ByrealPanel() {
                     </div>
                   );
                 }) : (
-                  // Fallback mock swaps when no activity yet
-                  [
-                    { from: 'USDT', to: 'MNT',   amount: '$2,000',   out: '3,076 MNT', agent: 'AlphaQuant',   ts: '2m ago'  },
-                    { from: 'ETH',  to: 'USDT',  amount: '1.2 ETH',  out: '$3,048',    agent: 'RiskManager',  ts: '18m ago' },
-                    { from: 'MNT',  to: 'USDT',  amount: '5,000 MNT', out: '$3,250',   agent: 'MacroAnalyzer', ts: '47m ago' },
-                  ].map((sw, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 5, padding: '0.3rem 0.4rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div>
-                        <div style={{ fontSize: '0.62rem', color: '#e0e6f0' }}>{sw.from} → {sw.to}</div>
-                        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{sw.amount} → {sw.out}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.58rem', color: '#a78bfa' }}>{sw.agent}</div>
-                        <div style={{ fontSize: '0.53rem', color: 'var(--text-dim)' }}>{sw.ts}</div>
-                      </div>
-                    </div>
-                  ))
+                  <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textAlign: 'center', padding: '0.5rem' }}>
+                    No agent activity yet
+                  </div>
                 )}
               </div>
             </div>
@@ -292,7 +273,7 @@ export default function ByrealPanel() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
                 {[
-                  { label: 'Agents',   value: agents.length > 0 ? String(agents.length) : '4',   color: '#a78bfa' },
+                  { label: 'Agents',   value: agents.length > 0 ? String(agents.length) : '—',   color: '#a78bfa' },
                   { label: 'Skills',   value: totalSkills > 0 ? String(totalSkills) : '—',         color: '#00d4ff' },
                   { label: 'Network',  value: 'Mantle',   color: '#00e87a' },
                   { label: 'ERC-8004', value: 'Active',   color: '#f7931a' },
@@ -341,29 +322,9 @@ export default function ByrealPanel() {
                     })}
                   </div>
                 )) : (
-                  // Fallback static skills
-                  [
-                    { skill: 'byreal_swap',      desc: 'Execute CLMM swaps on Byreal DEX',        type: 'strategy' },
-                    { skill: 'byreal_lp_add',    desc: 'Add liquidity to concentrated pools',     type: 'strategy' },
-                    { skill: 'byreal_lp_remove', desc: 'Remove LP when position goes out-range',  type: 'risk'     },
-                    { skill: 'byreal_perps',     desc: 'Open/close perpetual futures positions',  type: 'strategy' },
-                    { skill: 'mantle_record',    desc: 'Record decisions on-chain via ERC-8004',  type: 'data'     },
-                    { skill: 'price_feed',       desc: 'Bybit WebSocket real-time price stream',  type: 'data'     },
-                  ].map(sk => {
-                    const TYPE_COLOR: Record<string, string> = { strategy: '#00e87a', data: '#00d4ff', risk: '#f59e0b' };
-                    const color = TYPE_COLOR[sk.type] ?? '#6b7fa3';
-                    return (
-                      <div key={sk.skill} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(167,139,250,0.1)', borderLeft: `3px solid rgba(167,139,250,0.4)`, borderRadius: 5, padding: '0.3rem 0.4rem', marginBottom: 2 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '0.62rem', fontWeight: 600, color: '#a78bfa', fontFamily: 'JetBrains Mono,monospace' }}>{sk.skill}</div>
-                          <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sk.desc}</div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 6 }}>
-                          <div style={{ fontSize: '0.52rem', color, background: `${color}12`, border: `1px solid ${color}35`, borderRadius: 3, padding: '1px 4px' }}>{sk.type}</div>
-                        </div>
-                      </div>
-                    );
-                  })
+                  <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textAlign: 'center', padding: '0.5rem' }}>
+                    No skills registered
+                  </div>
                 )}
               </div>
             </div>
