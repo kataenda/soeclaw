@@ -68,12 +68,9 @@ export default function ByrealPanel() {
       // Agent skills registry
       if (ag?.agents) setAgents(ag.agents);
 
-      // BYREAL agent activity from thought stream
+      // All agent activity from thought stream (INFO + CHAIN)
       if (Array.isArray(ts)) {
-        const byreal = ts
-          .filter((th: ByrealThought) => th.agent_name === 'BYREAL' || th.message?.includes('[BYREAL'))
-          .slice(0, 8);
-        setActivity(byreal);
+        setActivity(ts.slice(0, 8));
       }
 
       setLoading(false);
@@ -229,23 +226,25 @@ export default function ByrealPanel() {
               </div>
             </div>
 
-            {/* BYREAL Agent Activity */}
+            {/* Agent Activity */}
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{t('bp_recent_swaps')}</div>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Agent Activity</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto', maxHeight: '100%' }}>
                 {activity.length > 0 ? activity.map((act, i) => {
-                  const isPerps = act.message.includes('byreal-perps');
-                  const isSwap  = act.message.includes('byreal_swap') || act.message.includes('swap preview');
-                  const color   = isPerps ? '#f7931a' : isSwap ? '#00d4ff' : '#a78bfa';
-                  const label   = isPerps ? 'PERPS' : isSwap ? 'SWAP' : 'SKILL';
-                  const body    = act.message.replace('[BYREAL SKILLS] ', '').slice(0, 80);
+                  const isChain  = act.msg_type === 'CHAIN';
+                  const AGENT_COLOR: Record<string, string> = {
+                    AlphaQuant: '#00e87a', WhaleWatcher: '#00d4ff',
+                    MacroAnalyzer: '#a78bfa', RiskManager: '#f59e0b', MANTLE: '#f7931a',
+                  };
+                  const color = AGENT_COLOR[act.agent_name] ?? '#6b7fa3';
+                  const body  = act.message.slice(0, 90);
                   return (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 5, padding: '0.3rem 0.4rem', border: `1px solid rgba(255,255,255,0.05)`, borderLeft: `3px solid ${color}55` }}>
+                    <div key={i} style={{ background: isChain ? 'rgba(247,147,26,0.04)' : 'rgba(255,255,255,0.02)', borderRadius: 5, padding: '0.3rem 0.4rem', border: `1px solid ${isChain ? 'rgba(247,147,26,0.15)' : 'rgba(255,255,255,0.05)'}`, borderLeft: `3px solid ${color}88` }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                        <span style={{ fontSize: '0.48rem', padding: '1px 4px', borderRadius: 3, background: `${color}15`, border: `1px solid ${color}40`, color, fontWeight: 700 }}>{label}</span>
-                        <span style={{ fontSize: '0.55rem', color: '#a78bfa' }}>BYREAL</span>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 700, color }}>{act.agent_name}</span>
+                        {isChain && <span style={{ fontSize: '0.45rem', padding: '1px 4px', borderRadius: 3, background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.3)', color: '#f7931a', fontWeight: 700 }}>ON-CHAIN</span>}
                       </div>
-                      <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{body}</div>
+                      <div style={{ fontSize: '0.57rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>{body}</div>
                     </div>
                   );
                 }) : (
