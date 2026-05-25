@@ -73,6 +73,12 @@ async def get_swap_preview(from_token: str, to_token: str, amount: float) -> dic
     )
 
 
+async def execute_swap(from_token: str, to_token: str, amount: float, slippage: float = 0.5) -> dict:
+    return await _run(
+        f"{_dex_cmd()} swap execute {from_token} {to_token} {amount} --slippage {slippage} -o json --non-interactive"
+    )
+
+
 async def get_positions() -> dict:
     return await _run(f"{_dex_cmd()} positions list -o json --non-interactive")
 

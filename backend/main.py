@@ -1052,6 +1052,28 @@ async def byreal_swap_preview(from_token: str = "SOL", to_token: str = "USDC", a
         return {"success": False, "error": str(e)}
 
 
+class SwapExecuteRequest(BaseModel):
+    from_token: str
+    to_token: str
+    amount: float
+    slippage: float = 0.5
+
+@app.post("/api/byreal/swap/execute")
+async def byreal_swap_execute(req: SwapExecuteRequest):
+    """Execute a real token swap on Byreal CLMM DEX via CLI."""
+    try:
+        from byreal import execute_swap
+        result = await asyncio.wait_for(
+            execute_swap(req.from_token, req.to_token, req.amount, req.slippage),
+            timeout=30,
+        )
+        return _byreal_wrap(result)
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Swap execution timed out (30s)"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # ── Wallet Analysis ──────────────────────────────────────────────────────────
 
 class WalletAnalyzeRequest(BaseModel):
@@ -1750,6 +1772,7 @@ async def agent_loop():
                     MANTLE_TOKENS = {"MNT/USDT", "mETH/USDT", "COOK/USDT", "FBTC/USDT", "WMNT/USDT"}
                     PERP_TOKENS   = {"BTC/USDT", "ETH/USDT"}
                     token_base    = symbol.replace("/USDT", "")
+                    _pending_swap = None
 
                     try:
                         if symbol in PERP_TOKENS:
@@ -1782,15 +1805,28 @@ async def agent_loop():
                             # Real Byreal DEX CLI — swap preview
                             from byreal import get_swap_preview
                             amt = 100.0
-                            preview = await asyncio.wait_for(get_swap_preview("USDT", token_base, amt), timeout=12)
+                            _from_t = "USDT" if action == "BUY" else token_base
+                            _to_t   = token_base if action == "BUY" else "USDT"
+                            preview = await asyncio.wait_for(get_swap_preview(_from_t, _to_t, amt), timeout=12)
                             raw_prev = preview.get("data", preview)
                             out_amt  = raw_prev.get("outputAmount", raw_prev.get("out_amount", raw_prev.get("amountOut", "?")))
-                            route    = raw_prev.get("route", raw_prev.get("pool", f"{token_base}-USDT"))
+                            route    = raw_prev.get("route", raw_prev.get("pool", f"{_from_t}-{_to_t}"))
                             byreal_skill = "byreal_swap"
                             byreal_msg = (
-                                f"[BYREAL SKILLS] byreal-cli swap preview USDT->{token_base} ${amt} · "
+                                f"[BYREAL SKILLS] byreal-cli swap preview {_from_t}->{_to_t} ${amt} · "
                                 f"out={out_amt} · route={route} · slippage 0.5% · Byreal CLMM"
                             )
+                            _pending_swap = {
+                                "from_token": _from_t,
+                                "to_token": _to_t,
+                                "amount": amt,
+                                "out_amount": str(out_amt),
+                                "route": str(route),
+                                "agent": agent_cfg["name"],
+                                "symbol": symbol,
+                                "action": action,
+                                "confidence": round(confidence),
+                            }
                     except Exception as be:
                         # Fallback if CLI unavailable — still log the intent
                         direction = "LONG" if action == "BUY" else "SHORT"
@@ -1799,6 +1835,9 @@ async def agent_loop():
                             f"[BYREAL SKILLS] {byreal_skill} -> {action} {symbol} via Byreal Agent Skills "
                             f"· conf {confidence:.0f}% (CLI: {str(be)[:60]})"
                         )
+
+                    if _pending_swap:
+                        await manager.broadcast({"type": "PENDING_SWAP", "data": _pending_swap})
 
                     await manager.broadcast({
                         "type": "THOUGHT",

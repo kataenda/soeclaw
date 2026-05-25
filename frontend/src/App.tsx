@@ -14,6 +14,8 @@ import FinancialDashboard from './components/FinancialDashboard';
 import AlphaScorecard from './components/AlphaScorecard';
 import SentimentPanel from './components/SentimentPanel';
 import ShareAlphaCard from './components/ShareAlphaCard';
+import SwapApprovalModal from './components/SwapApprovalModal';
+import type { SwapData } from './components/SwapApprovalModal';
 import { useTranslation } from './i18n/TranslationContext';
 import { WS_URL } from './config';
 
@@ -53,6 +55,7 @@ function App() {
   const [newTxHash, setNewTxHash]           = useState<string | null>(null);
   const [showFinancial, setShowFinancial]   = useState(false);
   const [showShareCard, setShowShareCard]   = useState(false);
+  const [pendingSwap, setPendingSwap]       = useState<SwapData | null>(null);
   const [walletAddress, setWalletAddress]   = useState('');
   const [walletBalanceMnt, setWalletBalanceMnt] = useState(0);
   const [walletGreeting, setWalletGreeting] = useState('');
@@ -114,6 +117,8 @@ function App() {
               };
               setThoughts(prev => [chainThought, ...prev].slice(0, 50));
             }
+          } else if (msg.type === 'PENDING_SWAP') {
+            setPendingSwap(msg.data as SwapData);
           } else if (msg.type === 'PRICE_UPDATE') {
             setPrices(msg.data);
           } else if (msg.type === 'AGENT_STATUS') {
@@ -166,6 +171,20 @@ function App() {
       <WelcomeModal />
       {showFinancial && <FinancialDashboard onClose={() => setShowFinancial(false)} />}
       {showShareCard && <ShareAlphaCard onClose={() => setShowShareCard(false)} />}
+      {pendingSwap && (
+        <SwapApprovalModal
+          swap={pendingSwap}
+          onClose={() => setPendingSwap(null)}
+          onSuccess={(result) => {
+            setThoughts(prev => [{
+              agent_name: 'BYREAL',
+              message: `⚡ Swap executed! ${pendingSwap.from_token} → ${pendingSwap.to_token} · ${result.slice(0, 20)}…`,
+              msg_type: 'CHAIN',
+            }, ...prev].slice(0, 50));
+            setPendingSwap(null);
+          }}
+        />
+      )}
       <div className="scanline-overlay"></div>
       <div className="dashboard-grid">
 
