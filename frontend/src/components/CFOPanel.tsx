@@ -140,17 +140,55 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
 
   const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4')];
   const BYREAL_QUICK = [
+    // ── Discovery ──
     'Byreal help',
+    'Catalog list',
+    'Catalog search signals',
+    // ── Signals ──
     'Byreal perps signals',
-    'Perps account info',
-    'Perps positions',
-    'Perps order list',
-    'Account history',
-    'ETH signal detail',
     'BTC signal detail',
-    'Swap USDT → MNT preview',
+    'ETH signal detail',
+    'SOL signal detail',
+    'BNB signal detail',
+    // ── Perps Account ──
+    'Perps account info',
+    'Account history',
+    'Perps account init',
+    // ── Perps Orders ──
+    'Perps order list',
+    'Order market BTC long',
+    'Order limit BTC',
+    'Order cancel all',
+    // ── Perps Positions ──
+    'Perps positions',
+    'Position close all',
+    'Position leverage BTC 10x',
+    'Position TPSL BTC',
+    'Position margin BTC add',
+    // ── DEX ──
+    'DEX overview',
     'Top CLMM pools',
+    'Pools list',
+    'Pools analyze',
+    'Tokens list',
+    // ── Swap ──
+    'Swap USDT → MNT preview',
+    'Swap SOL → USDC preview',
+    // ── LP Positions ──
+    'My LP positions',
+    'Open LP position',
+    'Increase LP position',
+    'Decrease LP position',
+    'Close LP position',
+    'Claim LP fees',
+    'Claim LP rewards',
+    'Claim bonus rewards',
+    'Analyze LP position',
+    'Top LP positions',
+    'Copy farmer position',
+    // ── Wallet ──
     'Wallet balance',
+    'Wallet address',
     'Connect Byreal',
   ];
 
