@@ -1704,6 +1704,25 @@ async def agent_status():
     return {"running": agent_running, "bybit_connected": _bybit_connected}
 
 
+# ── Agent Skills endpoints ────────────────────────────────────────────────────
+
+@app.get("/api/skills")
+async def get_skills():
+    """List all registered agent skills."""
+    from skills import list_skills
+    return {"skills": list_skills()}
+
+
+@app.get("/api/skills/{name}")
+async def get_skill(name: str):
+    """Return SKILL.md content for a specific skill."""
+    from skills import fetch_skill
+    content = await fetch_skill(name)
+    if content is None:
+        raise HTTPException(status_code=404, detail=f"Skill '{name}' not found")
+    return {"name": name, "content": content}
+
+
 @app.get("/api/alpha/alerts")
 def get_recent_alerts():
     """Returns the 50 most recent alpha alerts for the frontend."""
@@ -2111,6 +2130,14 @@ async def startup_event():
 
     asyncio.create_task(agent_loop())     # AI trading loop
     asyncio.create_task(oracle_loop())    # AI oracle: AIRequested → fulfillAIResult
+
+    # Pre-fetch agent skills (byreal-perps-cli, byreal-cli)
+    try:
+        from skills import warm_cache as _warm_skills
+        asyncio.create_task(_warm_skills())
+        print("[Skills] Warming agent skills cache…")
+    except Exception as e:
+        print(f"[Skills] Cache warm failed: {e}")
 
     # AI Alpha & Data — whale tracker + anomaly detector + Telegram/Discord bots
     try:
@@ -3058,7 +3085,19 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     capital  = settings.capital_usd if settings else 10000
     profile  = settings.risk_profile if settings else "balanced"
 
+    # ── Load agent skill context if message is byreal-related ───────────────
     byreal_context = ""
+    try:
+        from skills import match_skill, fetch_skill
+        matched_skill = match_skill(message)
+        if matched_skill:
+            skill_content = await asyncio.wait_for(fetch_skill(matched_skill), timeout=5)
+            if skill_content:
+                # Extract just the first 80 lines (key rules + commands, skip verbose examples)
+                skill_lines = skill_content.splitlines()[:80]
+                byreal_context = f"\n\n[AGENT SKILL: {matched_skill}]\n" + "\n".join(skill_lines)
+    except Exception:
+        pass
 
     # ── Byreal direct responses (no Claude needed) ───────────────────────────
     if any(k in msg_lower for k in ["perps signal", "perps signals", "byreal signal",
@@ -3134,38 +3173,41 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     # ── Byreal: help / command list ───────────────────────────────────────────
     if any(k in msg_lower for k in ["byreal help", "help byreal", "byreal command", "apa bisa byreal",
                                      "what can byreal", "byreal capabilities", "byreal skill",
-                                     "instruksi byreal", "daftar command", "byreal list"]):
+                                     "instruksi byreal", "daftar command", "byreal list",
+                                     "agent skill", "skills list"]):
+        from skills import list_skills
+        skill_list = list_skills()
+        skill_lines = "\n".join(
+            f"• {s['name']} — {s['description']} {'✓ cached' if s['cached'] else ''}"
+            for s in skill_list
+        )
         return {
             "reply": (
                 "⚡ BYREAL AGENT SKILLS — All Commands\n\n"
+                f"📦 Registered Skills:\n{skill_lines}\n\n"
                 "🏊 DEX · @byreal-io/byreal-cli\n"
                 "• overview              — Global DEX stats (TVL, volume, fees)\n"
                 "• pools list            — Top CLMM pools ranked by APR\n"
                 "• pools analyze <id>    — Deep pool analysis (APR, risk, range)\n"
-                "• tokens list           — All available tokens\n"
                 "• swap preview          — Preview swap route & output\n"
-                "• swap execute          — Execute real swap on CLMM\n"
                 "• positions list        — Your LP positions\n"
-                "• positions open        — Open new liquidity position\n"
-                "• positions close       — Close LP position\n"
                 "• positions claim       — Claim fees & rewards\n"
                 "• wallet balance        — Wallet token balances\n\n"
                 "📈 PERPS · @byreal-io/byreal-perps-cli\n"
                 "• signal scan           — AI signals across all markets\n"
-                "• signal detail <coin>  — Technical analysis for specific asset\n"
+                "• signal detail <coin>  — Technical analysis per asset\n"
                 "• account info          — Perps account balance & margin\n"
                 "• account history       — Recent trading activity\n"
                 "• position list         — Open perps positions\n"
-                "• position close        — Close position at market\n"
-                "• position tpsl         — Set take-profit / stop-loss\n"
+                "• position close <coin> — Close position at market\n"
+                "• position tpsl <coin>  — Set take-profit / stop-loss\n"
                 "• position leverage     — Configure leverage (1–50x)\n"
                 "• order market          — Execute market order\n"
                 "• order limit           — Place limit order\n"
-                "• order cancel          — Cancel active order\n\n"
+                "• order cancel-all      — Cancel all open orders\n\n"
                 "💬 Ask me naturally:\n"
                 "\"ETH signal detail\" · \"perps account info\"\n"
-                "\"wallet balance\" · \"analyze MNT/USDC pool\"\n"
-                "\"open BTC long 10x\" · \"perps positions\""
+                "\"wallet balance\" · \"open BTC long $10 5x\""
             ),
             "ai": True, "byreal": True,
         }
