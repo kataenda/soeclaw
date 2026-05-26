@@ -2980,6 +2980,56 @@ async def cfo_portfolio_analyze(req: PortfolioAnalyzeRequest):
     }
 
 
+class DeployERC20Request(BaseModel):
+    name: str
+    symbol: str
+    supply: int
+    decimals: int = 18
+
+@app.post("/api/deploy/mantle")
+async def deploy_mantle_erc20(req: DeployERC20Request):
+    """Compile and deploy an ERC-20 token to Mantle mainnet."""
+    try:
+        from deploy import generate_erc20, compile_solidity
+        source, contract_name = generate_erc20(req.name, req.symbol, req.supply, req.decimals)
+        compiled = await asyncio.wait_for(compile_solidity(source, contract_name), timeout=60)
+        result = await asyncio.to_thread(
+            mantle_client.deploy_contract, compiled["abi"], compiled["bytecode"]
+        )
+        await manager.broadcast({
+            "type": "THOUGHT",
+            "data": {
+                "agent_name": "DEPLOY",
+                "message": (
+                    f"[MANTLE DEPLOY] ✅ {req.name} ({req.symbol}) deployed · "
+                    f"supply={req.supply:,} · {result['address']}"
+                ),
+                "msg_type": "CHAIN",
+                "tx_hash": result["tx_hash"],
+                "explorer_url": f"{EXPLORER_BASE}/address/{result['address']}",
+            },
+        })
+        return {
+            "success": True,
+            "network": "Mantle Mainnet",
+            "chain_id": 5000,
+            "contract_address": result["address"],
+            "tx_hash": result["tx_hash"],
+            "deployer": result["deployer"],
+            "explorer_url": f"{EXPLORER_BASE}/address/{result['address']}",
+            "tx_explorer_url": f"{EXPLORER_BASE}/tx/{result['tx_hash']}",
+            "token": {
+                "name": req.name,
+                "symbol": req.symbol,
+                "supply": req.supply,
+                "decimals": req.decimals,
+            },
+            "abi": compiled["abi"],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class CFOChatRequest(BaseModel):
     message: str
     history: list[dict] = []
@@ -3450,6 +3500,92 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
             }
         except Exception as e:
             return {"reply": f"[BYREAL TP/SL]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Deploy contract to Mantle via chat ───────────────────────────────────
+    _DEPLOY_KEYS = ["deploy token", "buat token", "create token", "deploy erc20", "deploy erc-20",
+                    "deploy kontrak", "deploy contract", "bikin token", "launch token",
+                    "create erc20", "mint token baru", "deploy ke mantle"]
+    if any(k in msg_lower for k in _DEPLOY_KEYS):
+        from deploy import parse_deploy_params
+        params = parse_deploy_params(msg)
+        if not params:
+            return {
+                "reply": (
+                    "[MANTLE DEPLOY — ERC-20]\n\n"
+                    "Format:\n"
+                    "  deploy token <Nama> <SIMBOL> supply <jumlah>\n\n"
+                    "Contoh:\n"
+                    "  deploy token SoeToken SOE supply 1000000\n"
+                    "  buat token bernama MantleGold simbol MGLD supply 500jt\n"
+                    "  create ERC-20 MyToken MYT supply 100k\n\n"
+                    "Shorthand supply: 1k=1.000 · 1m=1.000.000 · 1jt=1.000.000\n"
+                    "Kontrak akan di-deploy ke Mantle Mainnet (Chain ID 5000)."
+                ),
+                "ai": True,
+            }
+        try:
+            from deploy import generate_erc20, compile_solidity
+            await manager.broadcast({
+                "type": "THOUGHT",
+                "data": {
+                    "agent_name": "DEPLOY",
+                    "message": f"[MANTLE DEPLOY] Compiling {params['name']} ({params['symbol']})…",
+                    "msg_type": "INFO",
+                },
+            })
+            source, contract_name = generate_erc20(
+                params["name"], params["symbol"], params["supply"], params["decimals"]
+            )
+            compiled = await asyncio.wait_for(compile_solidity(source, contract_name), timeout=60)
+            result = await asyncio.to_thread(
+                mantle_client.deploy_contract, compiled["abi"], compiled["bytecode"]
+            )
+            explorer_url = f"{EXPLORER_BASE}/address/{result['address']}"
+            tx_url = f"{EXPLORER_BASE}/tx/{result['tx_hash']}"
+            await manager.broadcast({
+                "type": "THOUGHT",
+                "data": {
+                    "agent_name": "DEPLOY",
+                    "message": (
+                        f"[MANTLE DEPLOY] ✅ {params['name']} ({params['symbol']}) deployed · "
+                        f"supply={params['supply']:,} · {result['address']}"
+                    ),
+                    "msg_type": "CHAIN",
+                    "tx_hash": result["tx_hash"],
+                    "explorer_url": explorer_url,
+                },
+            })
+            return {
+                "reply": (
+                    f"[MANTLE DEPLOY — SUKSES ✅]\n\n"
+                    f"Token    : {params['name']} ({params['symbol']})\n"
+                    f"Supply   : {params['supply']:,} {params['symbol']}\n"
+                    f"Decimals : {params['decimals']}\n"
+                    f"Network  : Mantle Mainnet (Chain ID 5000)\n"
+                    f"Deployer : {result['deployer'][:10]}…\n\n"
+                    f"Contract : {result['address']}\n"
+                    f"Tx Hash  : {result['tx_hash'][:16]}…\n\n"
+                    f"🔍 Explorer: {explorer_url}\n"
+                    f"📋 Tx: {tx_url}"
+                ),
+                "ai": True,
+                "deploy": {
+                    "address": result["address"],
+                    "tx_hash": result["tx_hash"],
+                    "explorer_url": explorer_url,
+                    "tx_explorer_url": tx_url,
+                    "token": params,
+                },
+            }
+        except Exception as de:
+            return {
+                "reply": (
+                    f"[MANTLE DEPLOY — GAGAL]\n\n"
+                    f"Error: {str(de)[:200]}\n\n"
+                    f"Pastikan PRIVATE_KEY terkonfigurasi dan ada MNT untuk gas."
+                ),
+                "ai": True,
+            }
 
     # ── Rule-based responses ──────────────────────────────────────────────────
     def contains(*words): return any(w in msg_lower for w in words)

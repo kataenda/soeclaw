@@ -12,3 +12,5 @@ passlib[bcrypt]
 python-jose[cryptography]
 # AI Alpha & Data
 python-telegram-bot>=20.0
+# Smart contract deployment
+py-solc-x

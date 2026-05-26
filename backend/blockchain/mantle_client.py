@@ -329,6 +329,33 @@ class MantleClient:
             print(f"[Oracle] get_pending_ai_requests error: {e}")
             return []
 
+    def deploy_contract(self, abi: list, bytecode: str) -> dict:
+        """Deploy a compiled contract to Mantle. Returns {address, tx_hash, deployer}."""
+        if not PRIVATE_KEY:
+            raise RuntimeError("PRIVATE_KEY not set — cannot deploy")
+        if not self.connected:
+            raise RuntimeError("Not connected to Mantle RPC")
+        account = self.w3.eth.account.from_key(PRIVATE_KEY)
+        nonce = self.w3.eth.get_transaction_count(account.address)
+        Contract = self.w3.eth.contract(abi=abi, bytecode=bytecode)
+        deploy_tx = Contract.constructor().build_transaction({
+            "chainId": CHAIN_ID,
+            "gas": 3_000_000,
+            "maxFeePerGas": self.w3.eth.gas_price,
+            "maxPriorityFeePerGas": self.w3.to_wei("1", "gwei"),
+            "nonce": nonce,
+            "from": account.address,
+        })
+        signed = self.w3.eth.account.sign_transaction(deploy_tx, private_key=PRIVATE_KEY)
+        raw = getattr(signed, "raw_transaction", None) or getattr(signed, "rawTransaction", None)
+        tx_hash = self.w3.eth.send_raw_transaction(raw)
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        return {
+            "address": receipt.contractAddress,
+            "tx_hash": receipt.transactionHash.hex(),
+            "deployer": account.address,
+        }
+
     def get_agent_stats(self, agent_name: str) -> dict:
         """Returns on-chain trade count and reputation for an agent."""
         if not self.connected or not self.identity_registry:
