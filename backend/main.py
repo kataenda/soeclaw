@@ -378,7 +378,7 @@ def get_ai_decision(
                 f"- 24h change: {change_24h:+.2f}%\n"
                 f"- SMA5: ${sma5:,.4f} | SMA20: ${sma20:,.4f} | Trend: {trend}\n"
                 f"- Recent prices (oldest→newest): {price_summary}\n\n"
-                f"YOUR ERC-8004 IDENTITY (Mantle Sepolia):\n"
+                f"YOUR ERC-8004 IDENTITY (Mantle):\n"
                 f"- Reputation: {reputation} ({rep_label})\n"
                 f"- On-chain decisions: {onchain_trades}\n"
                 f"- Max position size: {max_size}%\n\n"
@@ -550,7 +550,7 @@ BYREAL_SKILLS_REGISTRY = {
                 {"name": "breakout_detection", "version": "1.0", "type": "signal",
                  "description": "Detects price breakouts above resistance levels"},
             ],
-            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "wallet": {"network": "mantle", "currency": "MNT"},
             "erc8004_token_id": 0,
         },
         {
@@ -562,7 +562,7 @@ BYREAL_SKILLS_REGISTRY = {
                 {"name": "mean_reversion", "version": "2.0", "type": "strategy",
                  "description": "Statistical mean reversion with SMA bands"},
             ],
-            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "wallet": {"network": "mantle", "currency": "MNT"},
             "erc8004_token_id": 1,
         },
         {
@@ -574,7 +574,7 @@ BYREAL_SKILLS_REGISTRY = {
                 {"name": "macro_sentiment", "version": "1.2", "type": "data",
                  "description": "Macroeconomic indicator correlation analysis"},
             ],
-            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "wallet": {"network": "mantle", "currency": "MNT"},
             "erc8004_token_id": 3,
         },
         {
@@ -586,7 +586,7 @@ BYREAL_SKILLS_REGISTRY = {
                 {"name": "drawdown_control", "version": "1.8", "type": "risk",
                  "description": "Maximum drawdown enforcement and capital preservation"},
             ],
-            "wallet": {"network": "mantle-sepolia", "currency": "MNT"},
+            "wallet": {"network": "mantle", "currency": "MNT"},
             "erc8004_token_id": 4,
         },
     ],
@@ -620,7 +620,7 @@ def agents_economy(db: Session = Depends(database.get_db)):
             "total_pnl_pct": round(total_pnl / economy["balance"] * 100, 2),
             "skills": economy["skills"],
             "trade_count": len(trades),
-            "network": "Mantle Sepolia Testnet",
+            "network": "Mantle",
         })
 
     return sorted(result, key=lambda x: x["total_pnl_mnt"], reverse=True)
@@ -1267,7 +1267,7 @@ async def analyze_wallet(req: WalletAnalyzeRequest):
     balance_mnt = 0.0
     token_balances: dict = {}
 
-    # Get MNT balance from Mantle Sepolia
+    # Get MNT balance from Mantle
     try:
         from web3 import Web3
         checksummed = Web3.to_checksum_address(address)
@@ -1278,10 +1278,7 @@ async def analyze_wallet(req: WalletAnalyzeRequest):
 
     # Build portfolio context
     portfolio_ctx = f"MNT: {balance_mnt:.4f}"
-    if balance_mnt == 0:
-        portfolio_ctx += " (testnet — no balance yet)"
-
-    greeting = f"Wallet {address[:6]}...{address[-4:]} connected. Balance: {portfolio_ctx} on Mantle Sepolia."
+    greeting = f"Wallet {address[:6]}...{address[-4:]} connected. Balance: {portfolio_ctx} on Mantle."
 
     if anthropic_client:
         try:
@@ -1290,11 +1287,10 @@ async def analyze_wallet(req: WalletAnalyzeRequest):
                     model="claude-haiku-4-5-20251001",
                     max_tokens=150,
                     messages=[{"role": "user", "content": (
-                        f"User just connected their wallet to SoeClaw AI CFO on Mantle Sepolia testnet. "
+                        f"User just connected their wallet to SoeClaw AI CFO on Mantle mainnet. "
                         f"Wallet: {address[:10]}... Balance: {portfolio_ctx}. "
                         f"Give a short, friendly 2-sentence personalized welcome. "
                         f"If they have MNT, suggest a specific opportunity (Byreal DEX, mETH staking 6% APY, CLMM liquidity). "
-                        f"If balance is 0, suggest getting testnet MNT from faucet.sepolia.mantle.xyz. "
                         f"Be direct and specific. No generic greetings."
                     )}]
                 )
@@ -1698,7 +1694,7 @@ async def agents_onchain():
             "onchain_trades": stats["trades"],
             "reputation": stats["reputation"],
             "registry": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
-            "network": "Mantle Sepolia Testnet",
+            "network": "Mantle",
         })
     return result
 
@@ -1762,9 +1758,9 @@ async def agents_benchmark(db: Session = Depends(database.get_db)):
             "reputation":      onchain.get("reputation", 0),
             "erc8004_token_id": AGENT_TOKEN_IDS.get(agent_name),
             "registry_address": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
-            "explorer_url":    f"https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
-            "network":         "Mantle Sepolia Testnet",
-            "chain_id":        5003,
+            "explorer_url":    f"https://explorer.mantle.xyz/address/0x389DF777f009d32c4B6451F159c763c7f9d15803",
+            "network":         "Mantle",
+            "chain_id":        5000,
         })
 
     return sorted(result, key=lambda x: x["win_rate"], reverse=True)
@@ -1833,7 +1829,7 @@ async def agent_loop():
                     "msg_type": "CHAIN",
                     "tx_hash": None,
                     "explorer_url": (
-                        "https://sepolia.mantlescan.xyz/address/"
+                        "https://explorer.mantle.xyz/address/"
                         "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d"
                     ),
                 },
@@ -2261,7 +2257,7 @@ def cfo_alpha_scorecard(db: Session = Depends(database.get_db)):
             "win_rate": 0.0, "sharpe_ratio": 0.0,
             "max_drawdown_usd": 0.0,
             "verified_onchain": 0, "total_decisions": 0,
-            "proof_url": "https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+            "proof_url": "https://explorer.mantle.xyz/address/0x389DF777f009d32c4B6451F159c763c7f9d15803",
             "agents": [], "verdict": "INSUFFICIENT_DATA",
         }
 
@@ -2337,7 +2333,7 @@ def cfo_alpha_scorecard(db: Session = Depends(database.get_db)):
         "max_drawdown_usd": round(max_dd, 2),
         "verified_onchain": verified,
         "total_decisions": total,
-        "proof_url": "https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+        "proof_url": "https://explorer.mantle.xyz/address/0x389DF777f009d32c4B6451F159c763c7f9d15803",
         "agents": agents_list,
         "verdict": verdict,
     }
@@ -3404,7 +3400,7 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     elif contains("mnt", "mantle"):
         reply = (
             f"MNT/USDT: ${mnt_p:,.4f} ({mnt_c:+.2f}% 24h)\n"
-            f"SoeClaw beroperasi di Mantle Sepolia — semua trade diverifikasi on-chain via ERC-8004."
+            f"SoeClaw beroperasi di Mantle — semua trade diverifikasi on-chain via ERC-8004."
         )
     elif contains("cook", "byreal"):
         reply = (

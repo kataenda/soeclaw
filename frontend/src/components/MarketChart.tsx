@@ -617,7 +617,7 @@ const CandlestickChart: React.FC<CandleProps> = ({
               <span style={{ fontSize:'0.8rem', fontWeight:700, color:'#e0e6f0', fontFamily:'JetBrains Mono,monospace', letterSpacing:'-0.3px' }}>{symName}</span>
               <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#26a69a"/><path d="M4 6l1.5 1.5L8 4.5" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg>
             </div>
-            <div style={{ fontSize:'0.58rem', color:'#3d4f6a', fontFamily:'JetBrains Mono,monospace' }}>Mantle Sepolia</div>
+            <div style={{ fontSize:'0.58rem', color:'#3d4f6a', fontFamily:'JetBrains Mono,monospace' }}>Mantle</div>
           </div>
         </div>
 

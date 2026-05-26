@@ -19,7 +19,12 @@ const AGENTS = [
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
+  const isMainnet = hre.network.name === "mantleMainnet";
+  const chainId   = isMainnet ? 5000 : 5003;
+  const explorer  = isMainnet ? "https://explorer.mantle.xyz" : "https://sepolia.mantlescan.xyz";
+
   console.log(`\nDeploying with account: ${deployer.address}`);
+  console.log(`Network: ${hre.network.name} (chainId: ${chainId})`);
 
   const balance = await hre.ethers.provider.getBalance(deployer.address);
   console.log(`Balance: ${hre.ethers.formatEther(balance)} MNT\n`);
@@ -54,7 +59,7 @@ async function main() {
       { metadataKey: "strategy",  metadataValue: hre.ethers.toUtf8Bytes(agent.strategy) },
       { metadataKey: "platform",  metadataValue: hre.ethers.toUtf8Bytes("SoeClaw OS") },
       { metadataKey: "hackathon", metadataValue: hre.ethers.toUtf8Bytes("Turing Test by Mantle") },
-      { metadataKey: "chainId",   metadataValue: hre.ethers.toUtf8Bytes("5003") },
+      { metadataKey: "chainId",   metadataValue: hre.ethers.toUtf8Bytes(String(chainId)) },
     ])).wait();
 
     console.log(`  ✅ ${agent.name} — Token ID: ${agentId} | URI: ${agentURI}`);
@@ -74,14 +79,14 @@ async function main() {
   // ── 4. Save deployment info ─────────────────────────────────────────────
   const deployment = {
     network: hre.network.name,
-    chainId: 5003,
+    chainId,
     deployedAt: new Date().toISOString(),
     deployer: deployer.address,
     contracts: {
       AgentIdentityRegistry: {
         address: registryAddress,
         standard: "ERC-8004",
-        explorerUrl: `https://sepolia.mantlescan.xyz/address/${registryAddress}`,
+        explorerUrl: `${explorer}/address/${registryAddress}`,
       },
     },
     agents: AGENTS.map((a, i) => ({
@@ -89,7 +94,7 @@ async function main() {
       tokenId: tokenIds[i],
       strategy: a.strategy,
       agentCardURI: `${AGENT_CARD_BASE_URL}${a.file}`,
-      explorerUrl: `https://sepolia.mantlescan.xyz/token/${registryAddress}?a=${tokenIds[i]}`,
+      explorerUrl: `${explorer}/token/${registryAddress}?a=${tokenIds[i]}`,
     })),
   };
 

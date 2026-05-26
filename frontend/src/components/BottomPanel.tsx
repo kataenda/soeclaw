@@ -410,8 +410,8 @@ interface LeaderboardAgent {
 }
 interface OnchainData { name: string; onchain_trades: number; reputation: number }
 
-const REGISTRY_ADDR = '0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d';
-const TOKEN_IDS: Record<string, number> = { AlphaQuant: 0, WhaleWatcher: 1, MacroAnalyzer: 3, RiskManager: 4 };
+const REGISTRY_ADDR = '0x389DF777f009d32c4B6451F159c763c7f9d15803';
+const TOKEN_IDS: Record<string, number> = { AlphaQuant: 0, WhaleWatcher: 1, MacroAnalyzer: 2, RiskManager: 3 };
 const RANK_COLORS = ['#f59e0b', '#94a3b8', '#cd7f32'];
 
 function EconomyTab() {
@@ -486,7 +486,7 @@ function EconomyTab() {
             const econ        = agentEconByName[agent.name];
             const tokenId     = TOKEN_IDS[agent.name];
             const explorerUrl = tokenId !== undefined
-              ? `https://sepolia.mantlescan.xyz/token/${REGISTRY_ADDR}?a=${tokenId}`
+              ? `https://explorer.mantle.xyz/token/${REGISTRY_ADDR}?a=${tokenId}`
               : undefined;
             const intel    = AGENT_INTEL[agent.name];
             const isActive = activeIntel === agent.name;
@@ -847,7 +847,7 @@ function BenchmarkTab() {
         <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', background: 'rgba(247,147,26,0.05)', border: '1px solid rgba(247,147,26,0.15)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.7rem' }}>⛓</span>
           <div className="mono-text text-muted" style={{ fontSize: '0.6rem', lineHeight: 1.5 }}>
-            ERC-8004 Identity Registry · Mantle Sepolia · Every decision permanently recorded
+            ERC-8004 Identity Registry · Mantle · Every decision permanently recorded
           </div>
         </div>
       )}

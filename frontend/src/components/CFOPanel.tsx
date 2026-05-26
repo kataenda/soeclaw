@@ -145,7 +145,7 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         walletAddress={walletAddress}
         onClose={() => setPendingTx(null)}
         onSuccess={(hash) => {
-          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://sepolia.mantlescan.xyz/tx/${hash}` }]);
+          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://explorer.mantle.xyz/tx/${hash}` }]);
           setPendingTx(null);
         }}
       />

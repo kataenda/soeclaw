@@ -21,8 +21,8 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 AGENT_TOKEN_IDS = {
     "AlphaQuant":    0,
     "WhaleWatcher":  1,
-    "MacroAnalyzer": 3,
-    "RiskManager":   4,
+    "MacroAnalyzer": 2,
+    "RiskManager":   3,
 }
 
 SOECLAW_ABI = [

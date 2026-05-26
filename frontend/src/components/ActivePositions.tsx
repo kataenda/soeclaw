@@ -80,7 +80,7 @@ const ActivePositions: React.FC<Props> = ({ trades, prices, newTxHash }) => {
                     <td style={{ padding: '0.3rem 0.5rem' }}>
                       {tr.tx_hash ? (
                         <a
-                          href={`https://sepolia.mantlescan.xyz/tx/${tr.tx_hash}`}
+                          href={`https://explorer.mantle.xyz/tx/${tr.tx_hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-cyan"

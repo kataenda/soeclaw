@@ -18,13 +18,13 @@ interface OnchainData {
   reputation: number;
 }
 
-const REGISTRY = "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d";
+const REGISTRY = "0x389DF777f009d32c4B6451F159c763c7f9d15803";
 
 const TOKEN_IDS: Record<string, number> = {
   AlphaQuant: 0,
   WhaleWatcher: 1,
-  MacroAnalyzer: 3,
-  RiskManager: 4,
+  MacroAnalyzer: 2,
+  RiskManager: 3,
 };
 
 const Leaderboard: React.FC = () => {
@@ -88,7 +88,7 @@ const Leaderboard: React.FC = () => {
           const oc = onchain[agent.name];
           const tokenId = TOKEN_IDS[agent.name];
           const explorerUrl = tokenId !== undefined
-            ? `https://sepolia.mantlescan.xyz/token/${REGISTRY}?a=${tokenId}`
+            ? `https://explorer.mantle.xyz/token/${REGISTRY}?a=${tokenId}`
             : undefined;
           const rankColors = ['#f59e0b', '#94a3b8', '#cd7f32'];
 

@@ -1,13 +1,13 @@
-﻿{
-  "network": "mantleTestnet",
-  "chainId": 5003,
-  "deployedAt": "2026-05-23T00:00:00.000Z",
+{
+  "network": "mantleMainnet",
+  "chainId": 5000,
+  "deployedAt": "2026-05-26T12:37:17.291Z",
   "deployer": "0xBaC32Ad5DD90b9eF4136529DFf4D8A2780AcE1f9",
   "contracts": {
     "AgentIdentityRegistry": {
-      "address": "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d",
+      "address": "0x389DF777f009d32c4B6451F159c763c7f9d15803",
       "standard": "ERC-8004",
-      "explorerUrl": "https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d"
+      "explorerUrl": "https://explorer.mantle.xyz/address/0x389DF777f009d32c4B6451F159c763c7f9d15803"
     }
   },
   "agents": [
@@ -16,29 +16,28 @@
       "tokenId": 0,
       "strategy": "momentum",
       "agentCardURI": "https://raw.githubusercontent.com/kataenda/soeclaw/main/smart-contract/agent-cards/alphaquant.json",
-      "explorerUrl": "https://sepolia.mantlescan.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=0"
+      "explorerUrl": "https://explorer.mantle.xyz/token/0x389DF777f009d32c4B6451F159c763c7f9d15803?a=0"
     },
     {
       "name": "WhaleWatcher",
       "tokenId": 1,
       "strategy": "mean_reversion",
       "agentCardURI": "https://raw.githubusercontent.com/kataenda/soeclaw/main/smart-contract/agent-cards/whalewatcher.json",
-      "explorerUrl": "https://sepolia.mantlescan.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=1"
+      "explorerUrl": "https://explorer.mantle.xyz/token/0x389DF777f009d32c4B6451F159c763c7f9d15803?a=1"
     },
     {
       "name": "MacroAnalyzer",
-      "tokenId": 3,
+      "tokenId": 2,
       "strategy": "trend_following",
       "agentCardURI": "https://raw.githubusercontent.com/kataenda/soeclaw/main/smart-contract/agent-cards/macroanalyzer.json",
-      "explorerUrl": "https://sepolia.mantlescan.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=3"
+      "explorerUrl": "https://explorer.mantle.xyz/token/0x389DF777f009d32c4B6451F159c763c7f9d15803?a=2"
     },
     {
       "name": "RiskManager",
-      "tokenId": 4,
+      "tokenId": 3,
       "strategy": "volatility_management",
       "agentCardURI": "https://raw.githubusercontent.com/kataenda/soeclaw/main/smart-contract/agent-cards/riskmanager.json",
-      "explorerUrl": "https://sepolia.mantlescan.xyz/token/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d?a=4"
+      "explorerUrl": "https://explorer.mantle.xyz/token/0x389DF777f009d32c4B6451F159c763c7f9d15803?a=3"
     }
-  ],
-  "notes": "Token ID 2 is an orphaned MacroAnalyzer mint (metadata tx reverted). Token 3 is the canonical MacroAnalyzer."
+  ]
 }
