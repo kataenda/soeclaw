@@ -114,16 +114,17 @@ async def get_perps_history() -> dict:
 
 
 async def execute_market_order(symbol: str, side: str, size: float,
-                               leverage: int = 5, tp: float | None = None,
+                               tp: float | None = None,
                                sl: float | None = None) -> dict:
+    """size must be in coin units (e.g. 0.001 for BTC), not USD.
+    Set leverage first with set_position_leverage() before calling this."""
     extra = ""
     if tp:
         extra += f" --tp {tp}"
     if sl:
         extra += f" --sl {sl}"
     return await _run(
-        f"{_PERPS_CMD} order market {side.lower()} {size} {shlex.quote(symbol)}"
-        f" --leverage {leverage}{extra} -o json"
+        f"{_PERPS_CMD} order market {side.lower()} {size} {shlex.quote(symbol)}{extra} -o json"
     )
 
 

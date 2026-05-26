@@ -2028,13 +2028,23 @@ async def agent_loop():
                             order_result = None
                             if signal_confirms:
                                 try:
+                                    from byreal import set_position_leverage
+                                    # 1. Set leverage first (required before order market)
+                                    await asyncio.wait_for(
+                                        set_position_leverage(token_base, 5), timeout=10
+                                    )
+                                    # 2. Size in coin units: $10 USD / current price
+                                    #    Round to 4 decimal places (Hyperliquid minimum)
+                                    usd_size = 10.0
+                                    coin_size = round(usd_size / price, 4)
+                                    sl_price = round(price * (0.97 if action == "BUY" else 1.03), 2)
+                                    # 3. Place market order
                                     order_result = await asyncio.wait_for(
                                         execute_market_order(
                                             symbol=token_base,
-                                            side=action.lower(),  # "buy" or "sell"
-                                            size=10.0,            # $10 USDT per trade
-                                            leverage=5,
-                                            sl=price * (0.97 if action == "BUY" else 1.03),
+                                            side=action.lower(),   # "buy" or "sell"
+                                            size=coin_size,         # e.g. 0.0001 BTC
+                                            sl=sl_price,            # actual price, not %
                                         ),
                                         timeout=15,
                                     )
@@ -2044,9 +2054,9 @@ async def agent_loop():
                             byreal_skill = "byreal_perps"
                             if signal_confirms and order_result and "error" not in order_result:
                                 byreal_msg = (
-                                    f"[BYREAL PERPS] ✅ ORDER EXECUTED · {action} {token_base} $10 · "
+                                    f"[BYREAL PERPS] ✅ ORDER EXECUTED · {action} {coin_size} {token_base} (~$10) · "
                                     f"score={sig_score:.0f} dir={sig_dir} · conf {confidence:.0f}% · "
-                                    f"SL 3% · Hyperliquid Perps"
+                                    f"SL @${sl_price:,.2f} · Hyperliquid Perps"
                                 )
                             elif signal_confirms and order_result and "error" in order_result:
                                 byreal_msg = (
