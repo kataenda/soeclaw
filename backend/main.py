@@ -1642,7 +1642,7 @@ async def get_wallet():
 
 # ── Agent control ────────────────────────────────────────────────────────────
 
-agent_running = True  # default ON saat startup
+agent_running = False  # default OFF — must be started explicitly
 
 
 @app.post("/api/agent/start")
@@ -3049,7 +3049,9 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     start_keywords = ["start trading", "mulai trading", "start agent", "resume agent",
                       "mulai", "jalankan trading", "aktifkan agent", "start", "resume"]
 
-    if any(k in msg_lower for k in stop_keywords) and agent_running:
+    if any(k in msg_lower for k in stop_keywords):
+        if not agent_running:
+            return {"reply": "Agent sudah dalam keadaan berhenti. Ketik 'start trading' untuk mengaktifkan kembali.", "ai": True}
         agent_running = False
         await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": False}})
         return {"reply": "Oke. Semua AI agent telah dihentikan. Trading dihentikan — tidak ada keputusan BUY/SELL yang akan dieksekusi sampai kamu aktifkan kembali.", "ai": True}
