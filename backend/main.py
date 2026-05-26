@@ -1821,42 +1821,112 @@ async def agent_loop():
     await fetch_prices()
     await manager.broadcast({"type": "PRICE_UPDATE", "data": price_cache})
 
+    # Byreal signal cache — refreshed every tick
+    _byreal_sigs: list = []
+    _byreal_sigs_ts: float = 0.0
+
+    # Agent → preferred byreal signal category
+    AGENT_CATEGORY = {
+        "AlphaQuant":    "moderate",
+        "WhaleWatcher":  "aggressive",
+        "MacroAnalyzer": "conservative",
+        "RiskManager":   "conservative",
+    }
+
     while True:
         await asyncio.sleep(AGENT_INTERVAL)
 
         if not agent_running:
-            continue  # skip tick tapi tetap loop (harga masih update)
+            continue
 
         try:
-            # Refresh prices (fetch_prices caches internally for 15s)
+            # Refresh prices
             await fetch_prices()
-            # Always append current cached prices to history (even if fetch failed)
             for sym in price_history:
                 p = price_cache[sym]["price"]
                 if p > 0:
                     price_history[sym] = (price_history[sym] + [p])[-50:]
             await manager.broadcast({"type": "PRICE_UPDATE", "data": price_cache})
 
-            # Pick rotating agent — capture index BEFORE incrementing
-            current_idx = _agent_idx % len(AGENT_CONFIGS)
-            _agent_idx += 1
-            agent_cfg = AGENT_CONFIGS[current_idx]
-            symbol = random.choice(list(price_cache.keys()))
-            price_info = price_cache[symbol]
-            price = price_info["price"]
-            change_24h = price_info["change_24h"]
+            # ── Step 1: Fetch byreal-perps-cli signals (primary decision engine)
+            import time as _time
+            if _time.time() - _byreal_sigs_ts > 55:
+                try:
+                    from byreal import get_perps_signals
+                    sig_data = await asyncio.wait_for(get_perps_signals(), timeout=15)
+                    raw = sig_data.get("data", {})
+                    sig_dict = raw.get("signals", {}) if isinstance(raw, dict) else {}
+                    flat: list = []
+                    for cat_sigs in sig_dict.values():
+                        if isinstance(cat_sigs, list):
+                            flat.extend(cat_sigs)
+                    _byreal_sigs = flat
+                    _byreal_sigs_ts = _time.time()
+                    await manager.broadcast({
+                        "type": "THOUGHT",
+                        "data": {
+                            "agent_name": "BYREAL",
+                            "message": (
+                                f"[byreal-perps-cli] signal scan complete · "
+                                f"{len(_byreal_sigs)} signals · "
+                                f"long={sig_data.get('data',{}).get('summary',{}).get('long',0)} "
+                                f"short={sig_data.get('data',{}).get('summary',{}).get('short',0)}"
+                            ),
+                            "msg_type": "DATA",
+                        },
+                    })
+                except Exception as se:
+                    if not _byreal_sigs:
+                        continue  # no signals at all, skip tick
+                    # else use cached signals
 
-            if price == 0:
+            if not _byreal_sigs:
                 continue
 
-            # ── Step 1: READ ERC-8004 reputation from Mantle blockchain ───────
-            onchain = await asyncio.to_thread(mantle_client.get_agent_stats, agent_cfg["name"])
-            reputation     = onchain.get("reputation", 0)
+            # ── Step 2: Pick rotating agent and its best signal ─────────────
+            current_idx = _agent_idx % len(AGENT_CONFIGS)
+            _agent_idx += 1
+            agent_cfg  = AGENT_CONFIGS[current_idx]
+
+            preferred_cat = AGENT_CATEGORY.get(agent_cfg["name"], "moderate")
+            cat_sigs = [s for s in _byreal_sigs if s.get("category") == preferred_cat]
+            if not cat_sigs:
+                cat_sigs = _byreal_sigs
+            best_sig = max(cat_sigs, key=lambda s: float(s.get("score", 0)))
+
+            # Extract fields
+            coin_raw   = best_sig.get("coin", "BTC")
+            coin       = coin_raw.replace("xyz:", "")
+            direction  = best_sig.get("direction", "Long")
+            sig_price  = float(best_sig.get("price", 0))
+            sig_score  = float(best_sig.get("score", 0))
+            sig_rsi    = best_sig.get("rsi", "?")
+            sig_change = best_sig.get("change24h", "0%")
+            sig_cat    = best_sig.get("category", preferred_cat)
+            funding    = best_sig.get("fundingAnnualized", "?")
+
+            action     = "BUY" if direction == "Long" else "SELL"
+            symbol     = f"{coin}/USDT"
+            price      = sig_price if sig_price > 0 else (price_cache.get(symbol, {}).get("price", 0) or 1)
+            try:
+                change_24h = float(str(sig_change).replace("%", ""))
+            except Exception:
+                change_24h = 0.0
+            confidence   = sig_score
+            position_size = 10  # $10 per trade
+            reasoning    = (
+                f"Byreal signal: {direction} {coin} · RSI={sig_rsi} · "
+                f"score={sig_score:.0f} · funding={funding} · cat={sig_cat}"
+            )
+
+            # ── Step 3: Read ERC-8004 reputation from Mantle ─────────────────
+            onchain      = await asyncio.to_thread(mantle_client.get_agent_stats, agent_cfg["name"])
+            reputation   = onchain.get("reputation", 0)
             onchain_trades = onchain.get("trades", 0)
 
             rep_label = (
-                f"ELITE (REP:{reputation})"       if reputation >= 20
-                else f"PROVEN (REP:{reputation})" if reputation >= 10
+                f"ELITE (REP:{reputation})"        if reputation >= 20
+                else f"PROVEN (REP:{reputation})"  if reputation >= 10
                 else f"CONSERVATIVE (REP:{reputation})" if reputation < 0
                 else f"NEUTRAL (REP:{reputation})"
             )
@@ -1865,69 +1935,28 @@ async def agent_loop():
                 "data": {
                     "agent_name": agent_cfg["name"],
                     "message": (
-                        f"Reading ERC-8004 identity from Mantle — {rep_label}, "
+                        f"ERC-8004 identity · {rep_label} · "
                         f"{onchain_trades} verified decisions on-chain"
                     ),
                     "msg_type": "CHAIN",
                     "tx_hash": None,
                     "explorer_url": (
                         "https://explorer.mantle.xyz/address/"
-                        "0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d"
+                        "0x389DF777f009d32c4B6451F159c763c7f9d15803"
                     ),
                 },
             })
 
-            # ── Step 2: DATA — market feed ingested by AI ────────────────────
-            history_len = len(price_history.get(symbol, []))
-            sma_fast = round(sum(price_history[symbol][-5:]) / 5, 4) if len(price_history.get(symbol, [])) >= 5 else price
-            sma_slow = round(sum(price_history[symbol][-20:]) / 20, 4) if len(price_history.get(symbol, [])) >= 20 else price
-            trend_sig = "UPTREND" if sma_fast > sma_slow else ("DOWNTREND" if sma_fast < sma_slow else "SIDEWAYS")
+            # ── Step 4: Agent evaluates byreal signal ────────────────────────
             await manager.broadcast({
                 "type": "THOUGHT",
                 "data": {
                     "agent_name": agent_cfg["name"],
                     "message": (
-                        f"STEP 1/3 · INGESTING MARKET FEED · {symbol} "
-                        f"@ ${price:,.4f} ({change_24h:+.2f}% 24h) · "
-                        f"SMA5={sma_fast:,.4f} SMA20={sma_slow:,.4f} · "
-                        f"Trend={trend_sig} · datapoints={history_len}"
-                    ),
-                    "msg_type": "DATA",
-                },
-            })
-
-            # ── Step 3: AI analysis — send to Claude with agent's system prompt
-            btc_vol = abs(price_cache.get("BTC/USDT", {}).get("change_24h", 0.0))
-            risk_status = "ELEVATED" if btc_vol > 4 else ("MODERATE" if btc_vol > 2 else "LOW")
-            await manager.broadcast({
-                "type": "THOUGHT",
-                "data": {
-                    "agent_name": agent_cfg["name"],
-                    "message": (
-                        f"STEP 2/3 · AI ANALYSIS · calling Claude ({agent_cfg['specialty']}) · "
-                        f"market_risk={risk_status} (BTC Δ={btc_vol:.1f}%) · "
-                        f"ERC-8004 rep={reputation} · max_size="
-                        f"{'25' if reputation >= 20 else ('18' if reputation >= 10 else ('6' if reputation < 0 else '10'))}%"
-                    ),
-                    "msg_type": "DATA",
-                },
-            })
-
-            # ── Step 4: AI makes the decision ────────────────────────────────
-            action, confidence, reasoning, position_size = get_ai_decision(
-                agent_cfg["name"], agent_cfg["specialty"], symbol, price, change_24h,
-                reputation, onchain_trades,
-                system_prompt=agent_cfg.get("system", ""),
-            )
-
-            await manager.broadcast({
-                "type": "THOUGHT",
-                "data": {
-                    "agent_name": agent_cfg["name"],
-                    "message": (
-                        f"STEP 3/3 · AI DECISION · {action} {symbol} "
-                        f"conf={confidence:.0f}% · size={position_size}% · "
-                        f"{reasoning}"
+                        f"[byreal signal] {coin} · {direction.upper()} · "
+                        f"score={sig_score:.0f} · RSI={sig_rsi} · "
+                        f"${price:,.4f} ({change_24h:+.2f}%) · "
+                        f"funding={funding} · category={sig_cat}"
                     ),
                     "msg_type": "DATA",
                 },
@@ -1938,10 +1967,10 @@ async def agent_loop():
                 "data": {
                     "agent_name": agent_cfg["name"],
                     "message": (
-                        f"[{symbol}] ${price:,.4f} ({change_24h:+.2f}%) -> {action} | "
-                        f"{reasoning} (Conf: {confidence:.0f}%, Size: {position_size}%)"
+                        f"[{symbol}] ${price:,.4f} ({change_24h:+.2f}%) → {action} | "
+                        f"{reasoning} (Conf: {confidence:.0f}%, Size: ${position_size})"
                     ),
-                    "msg_type": "ACTION" if action != "HOLD" else "INFO",
+                    "msg_type": "ACTION",
                 },
             }
             await manager.broadcast(thought_msg)
@@ -1987,125 +2016,35 @@ async def agent_loop():
                         },
                     })
 
-                    # ── Byreal Skills CLI — real invocation ───────────────────
-                    MANTLE_TOKENS = {"MNT/USDT", "mETH/USDT", "COOK/USDT", "FBTC/USDT", "WMNT/USDT"}
-                    PERP_TOKENS   = {"BTC/USDT", "ETH/USDT"}
-                    token_base    = symbol.replace("/USDT", "")
-                    _pending_swap = None
-
+                    # ── Byreal perps-cli: attempt order execution ─────────────
                     try:
-                        if symbol in PERP_TOKENS:
-                            # byreal-perps-cli: scan signals → execute if confirmed
-                            from byreal import get_perps_signals, execute_market_order
-                            signals_data = await asyncio.wait_for(get_perps_signals(), timeout=12)
-                            direction = "LONG" if action == "BUY" else "SHORT"
-                            # Parse nested structure: data.signals.{conservative,moderate,aggressive}[]
-                            raw_data  = signals_data.get("data", {})
-                            sig_dict  = raw_data.get("signals", {}) if isinstance(raw_data, dict) else {}
-                            sig_list  = []
-                            for cat_sigs in sig_dict.values():
-                                if isinstance(cat_sigs, list):
-                                    sig_list.extend(cat_sigs)
-                            matching = next((s for s in sig_list if token_base.upper() == s.get("coin","").upper()), None)
-                            sig_score = float(matching.get("score", 0)) if matching else 0
-                            sig_dir   = matching.get("direction", "").upper() if matching else ""
-                            if matching:
-                                sig_str = (
-                                    f"coin={matching['coin']} dir={sig_dir} "
-                                    f"RSI={matching.get('rsi','?')} score={sig_score:.0f} "
-                                    f"price=${float(matching.get('price',0)):,.0f}"
-                                )
-                            else:
-                                sig_str = f"{len(sig_list)} signals scanned, no match for {token_base}"
-
-                            # Execute real order when byreal signal confirms AI direction
-                            signal_confirms = (
-                                matching is not None and
-                                sig_score >= 55 and
-                                sig_dir == direction and
-                                confidence >= 60
+                        if True:  # all signals come from byreal perps
+                            # byreal-perps-cli: set leverage → place market order
+                            from byreal import set_position_leverage, execute_market_order
+                            await asyncio.wait_for(
+                                set_position_leverage(coin, 5), timeout=10
                             )
-                            order_result = None
-                            if signal_confirms:
-                                try:
-                                    from byreal import set_position_leverage
-                                    # 1. Set leverage first (required before order market)
-                                    await asyncio.wait_for(
-                                        set_position_leverage(token_base, 5), timeout=10
-                                    )
-                                    # 2. Size in coin units: $10 USD / current price
-                                    #    Round to 4 decimal places (Hyperliquid minimum)
-                                    usd_size = 10.0
-                                    coin_size = round(usd_size / price, 4)
-                                    sl_price = round(price * (0.97 if action == "BUY" else 1.03), 2)
-                                    # 3. Place market order
-                                    order_result = await asyncio.wait_for(
-                                        execute_market_order(
-                                            symbol=token_base,
-                                            side=action.lower(),   # "buy" or "sell"
-                                            size=coin_size,         # e.g. 0.0001 BTC
-                                            sl=sl_price,            # actual price, not %
-                                        ),
-                                        timeout=15,
-                                    )
-                                except Exception as oe:
-                                    order_result = {"error": str(oe)}
-
-                            byreal_skill = "byreal_perps"
-                            if signal_confirms and order_result and "error" not in order_result:
-                                byreal_msg = (
-                                    f"[BYREAL PERPS] ✅ ORDER EXECUTED · {action} {coin_size} {token_base} (~$10) · "
-                                    f"score={sig_score:.0f} dir={sig_dir} · conf {confidence:.0f}% · "
-                                    f"SL @${sl_price:,.2f} · Hyperliquid Perps"
-                                )
-                            elif signal_confirms and order_result and "error" in order_result:
-                                byreal_msg = (
-                                    f"[BYREAL PERPS] signal confirmed (score={sig_score:.0f}) but order failed: "
-                                    f"{order_result['error'][:60]}"
-                                )
-                            else:
-                                byreal_msg = (
-                                    f"[BYREAL PERPS] signal scan → {sig_str} · "
-                                    f"AI={direction} conf={confidence:.0f}% · "
-                                    f"{'no byreal confirmation (score={:.0f}<55)'.format(sig_score) if matching else 'no matching signal — skipping order'}"
-                                )
-                        else:
-                            # Real Byreal DEX CLI — swap preview
-                            from byreal import get_swap_preview
-                            amt = 100.0
-                            _from_t = "USDT" if action == "BUY" else token_base
-                            _to_t   = token_base if action == "BUY" else "USDT"
-                            preview = await asyncio.wait_for(get_swap_preview(_from_t, _to_t, amt), timeout=12)
-                            raw_prev = preview.get("data", preview)
-                            out_amt  = raw_prev.get("outputAmount", raw_prev.get("out_amount", raw_prev.get("amountOut", "?")))
-                            route    = raw_prev.get("route", raw_prev.get("pool", f"{_from_t}-{_to_t}"))
-                            byreal_skill = "byreal_swap"
+                            coin_size = round(10.0 / price, 4)
+                            sl_price  = round(price * (0.97 if action == "BUY" else 1.03), 4)
+                            order_result = await asyncio.wait_for(
+                                execute_market_order(
+                                    symbol=coin,
+                                    side=action.lower(),
+                                    size=coin_size,
+                                    sl=sl_price,
+                                ),
+                                timeout=15,
+                            )
                             byreal_msg = (
-                                f"[BYREAL SKILLS] byreal-cli swap preview {_from_t}->{_to_t} ${amt} · "
-                                f"out={out_amt} · route={route} · slippage 0.5% · Byreal CLMM"
+                                f"[BYREAL PERPS] ✅ ORDER EXECUTED · "
+                                f"{action} {coin_size} {coin} (~$10) · "
+                                f"score={sig_score:.0f} · SL @${sl_price:,.4f} · Hyperliquid"
                             )
-                            _pending_swap = {
-                                "from_token": _from_t,
-                                "to_token": _to_t,
-                                "amount": amt,
-                                "out_amount": str(out_amt),
-                                "route": str(route),
-                                "agent": agent_cfg["name"],
-                                "symbol": symbol,
-                                "action": action,
-                                "confidence": round(confidence),
-                            }
                     except Exception as be:
-                        # Fallback if CLI unavailable — still log the intent
-                        direction = "LONG" if action == "BUY" else "SHORT"
-                        byreal_skill = "byreal_perps" if symbol in PERP_TOKENS else "byreal_swap"
                         byreal_msg = (
-                            f"[BYREAL SKILLS] {byreal_skill} -> {action} {symbol} via Byreal Agent Skills "
-                            f"· conf {confidence:.0f}% (CLI: {str(be)[:60]})"
+                            f"[BYREAL PERPS] signal → {action} {coin} score={sig_score:.0f} · "
+                            f"awaiting realclaw setup · ({str(be)[:60]})"
                         )
-
-                    if _pending_swap:
-                        await manager.broadcast({"type": "PENDING_SWAP", "data": _pending_swap})
 
                     await manager.broadcast({
                         "type": "THOUGHT",
