@@ -10,15 +10,17 @@ interface Props {
   walletAddress?: string;
   walletBalanceMnt?: number;
   walletGreeting?: string;
+  onConnect?: (addr: string, bal: number, greeting: string) => void;
 }
 
-export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '' }: Props) {
+export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '', onConnect }: Props) {
   const { t } = useTranslation();
-  const [msgs,    setMsgs]    = useState<ChatMsg[]>([{ role: 'ai', text: t('cfo_welcome') }]);
-  const [pendingTx, setPendingTx] = useState<TxData | null>(null);
-  const [input,   setInput]   = useState('');
-  const [loading, setLoading] = useState(false);
-  const [health,  setHealth]  = useState<{ health_score: number; regime: string } | null>(null);
+  const [msgs,       setMsgs]       = useState<ChatMsg[]>([{ role: 'ai', text: t('cfo_welcome') }]);
+  const [pendingTx,  setPendingTx]  = useState<TxData | null>(null);
+  const [input,      setInput]      = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [health,     setHealth]     = useState<{ health_score: number; regime: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,6 +34,33 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
     if (!walletGreeting) return;
     setMsgs(prev => [...prev, { role: 'ai', text: walletGreeting }]);
   }, [walletGreeting]);
+
+  const connectWallet = useCallback(async () => {
+    const eth = (window as any).ethereum;
+    if (!eth) {
+      setMsgs(prev => [...prev, { role: 'ai', text: '❌ MetaMask not found. Please install MetaMask.' }]);
+      return;
+    }
+    setConnecting(true);
+    try {
+      const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+      const addr = accounts[0];
+      const res = await fetch(`${API_URL}/api/wallet/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: addr }),
+      });
+      const data = await res.json();
+      const bal: number = data.balance_mnt ?? 0;
+      const greeting: string = data.greeting ?? `Wallet ${addr.slice(0,6)}…${addr.slice(-4)} connected.`;
+      onConnect?.(addr, bal, greeting);
+      setMsgs(prev => [...prev, { role: 'ai', text: `✅ ${greeting}` }]);
+    } catch (err: any) {
+      const msg = err.code === 4001 ? 'Connection cancelled.' : (err.message ?? 'Connection error');
+      setMsgs(prev => [...prev, { role: 'ai', text: `❌ ${msg}` }]);
+    }
+    setConnecting(false);
+  }, [onConnect]);
 
   const connectToByreal = useCallback(async () => {
     setInput('');
@@ -164,6 +193,21 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          {!walletAddress && (
+            <button
+              onClick={connectWallet}
+              disabled={connecting}
+              style={{
+                fontSize: '0.55rem', fontWeight: 700, cursor: connecting ? 'wait' : 'pointer',
+                padding: '2px 7px', borderRadius: 4,
+                background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.35)',
+                color: '#00e87a', fontFamily: 'JetBrains Mono, monospace',
+                opacity: connecting ? 0.6 : 1,
+              }}
+            >
+              {connecting ? '...' : '⬡ Connect'}
+            </button>
+          )}
           {hScore !== null && (
             <span style={{ fontSize: '0.58rem', fontWeight: 700, color: hColor, background: `${hColor}15`, border: `1px solid ${hColor}33`, borderRadius: 4, padding: '1px 5px' }}>
               {hScore}/100

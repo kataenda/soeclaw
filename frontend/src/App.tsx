@@ -287,6 +287,11 @@ function App() {
             walletAddress={walletAddress}
             walletBalanceMnt={walletBalanceMnt}
             walletGreeting={walletGreeting}
+            onConnect={(addr, bal, greeting) => {
+              setWalletAddress(addr);
+              setWalletBalanceMnt(bal);
+              setWalletGreeting(greeting);
+            }}
           />
         </div>
 
