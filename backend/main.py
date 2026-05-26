@@ -1646,6 +1646,14 @@ async def agent_start():
     global agent_running
     agent_running = True
     await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": True}})
+    await manager.broadcast({
+        "type": "THOUGHT",
+        "data": {
+            "agent_name": "SYSTEM",
+            "message": "Agent STARTED — scanning byreal-perps-cli signals, monitoring Byreal CLMM pools",
+            "msg_type": "INFO",
+        },
+    })
     return {"status": "started"}
 
 
@@ -1654,7 +1662,41 @@ async def agent_stop():
     global agent_running
     agent_running = False
     await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": False}})
-    return {"status": "stopped"}
+    await manager.broadcast({
+        "type": "THOUGHT",
+        "data": {
+            "agent_name": "SYSTEM",
+            "message": "Agent STOPPING — closing all Byreal perps positions & cancelling open orders…",
+            "msg_type": "INFO",
+        },
+    })
+    # Close all open perps positions and cancel orders on Byreal
+    results = {}
+    try:
+        from byreal import close_all_perps_positions, cancel_all_perps_orders
+        pos_result = await asyncio.wait_for(close_all_perps_positions(), timeout=20)
+        results["positions_closed"] = pos_result
+        ord_result = await asyncio.wait_for(cancel_all_perps_orders(), timeout=20)
+        results["orders_cancelled"] = ord_result
+        await manager.broadcast({
+            "type": "THOUGHT",
+            "data": {
+                "agent_name": "BYREAL",
+                "message": "✅ All Byreal perps positions closed · All pending orders cancelled · Agent stopped",
+                "msg_type": "ACTION",
+            },
+        })
+    except Exception as e:
+        results["cleanup_error"] = str(e)
+        await manager.broadcast({
+            "type": "THOUGHT",
+            "data": {
+                "agent_name": "BYREAL",
+                "message": f"Agent stopped · Byreal cleanup: {str(e)[:80]}",
+                "msg_type": "INFO",
+            },
+        })
+    return {"status": "stopped", **results}
 
 
 @app.get("/api/agent/status")
@@ -1953,8 +1995,8 @@ async def agent_loop():
 
                     try:
                         if symbol in PERP_TOKENS:
-                            # Real Byreal Perps CLI — signal scan
-                            from byreal import get_perps_signals
+                            # byreal-perps-cli: scan signals → execute if confirmed
+                            from byreal import get_perps_signals, execute_market_order
                             signals_data = await asyncio.wait_for(get_perps_signals(), timeout=12)
                             direction = "LONG" if action == "BUY" else "SHORT"
                             # Parse nested structure: data.signals.{conservative,moderate,aggressive}[]
@@ -1965,19 +2007,58 @@ async def agent_loop():
                                 if isinstance(cat_sigs, list):
                                     sig_list.extend(cat_sigs)
                             matching = next((s for s in sig_list if token_base.upper() == s.get("coin","").upper()), None)
+                            sig_score = float(matching.get("score", 0)) if matching else 0
+                            sig_dir   = matching.get("direction", "").upper() if matching else ""
                             if matching:
                                 sig_str = (
-                                    f"coin={matching['coin']} dir={matching.get('direction','?')} "
-                                    f"RSI={matching.get('rsi','?')} score={matching.get('score','?')} "
+                                    f"coin={matching['coin']} dir={sig_dir} "
+                                    f"RSI={matching.get('rsi','?')} score={sig_score:.0f} "
                                     f"price=${float(matching.get('price',0)):,.0f}"
                                 )
                             else:
-                                sig_str = f"{len(sig_list)} signals scanned"
-                            byreal_skill = "byreal_perps"
-                            byreal_msg = (
-                                f"[BYREAL SKILLS] byreal-perps-cli signal scan -> {direction} {symbol} · "
-                                f"{sig_str} · conf {confidence:.0f}% · Byreal Hyperliquid Perps"
+                                sig_str = f"{len(sig_list)} signals scanned, no match for {token_base}"
+
+                            # Execute real order when byreal signal confirms AI direction
+                            signal_confirms = (
+                                matching is not None and
+                                sig_score >= 55 and
+                                sig_dir == direction and
+                                confidence >= 60
                             )
+                            order_result = None
+                            if signal_confirms:
+                                try:
+                                    order_result = await asyncio.wait_for(
+                                        execute_market_order(
+                                            symbol=token_base,
+                                            side=action.lower(),  # "buy" or "sell"
+                                            size=10.0,            # $10 USDT per trade
+                                            leverage=5,
+                                            sl=price * (0.97 if action == "BUY" else 1.03),
+                                        ),
+                                        timeout=15,
+                                    )
+                                except Exception as oe:
+                                    order_result = {"error": str(oe)}
+
+                            byreal_skill = "byreal_perps"
+                            if signal_confirms and order_result and "error" not in order_result:
+                                byreal_msg = (
+                                    f"[BYREAL PERPS] ✅ ORDER EXECUTED · {action} {token_base} $10 · "
+                                    f"score={sig_score:.0f} dir={sig_dir} · conf {confidence:.0f}% · "
+                                    f"SL 3% · Hyperliquid Perps"
+                                )
+                            elif signal_confirms and order_result and "error" in order_result:
+                                byreal_msg = (
+                                    f"[BYREAL PERPS] signal confirmed (score={sig_score:.0f}) but order failed: "
+                                    f"{order_result['error'][:60]}"
+                                )
+                            else:
+                                byreal_msg = (
+                                    f"[BYREAL PERPS] signal scan → {sig_str} · "
+                                    f"AI={direction} conf={confidence:.0f}% · "
+                                    f"{'no byreal confirmation (score={:.0f}<55)'.format(sig_score) if matching else 'no matching signal — skipping order'}"
+                                )
                         else:
                             # Real Byreal DEX CLI — swap preview
                             from byreal import get_swap_preview
