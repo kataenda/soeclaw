@@ -257,6 +257,8 @@ function App() {
         {/* Left Sidebar */}
         <div className={`sidebar-left${mobileTab === 'agents' ? ' tab-active' : ''}`} role="complementary" aria-label="Agent wallet and thought stream">
           <WalletPanel
+            externalAddress={walletAddress}
+            externalBalance={walletBalanceMnt}
             onConnect={(addr, bal, greeting) => {
               setWalletAddress(addr);
               setWalletBalanceMnt(bal);
@@ -287,6 +289,11 @@ function App() {
             walletAddress={walletAddress}
             walletBalanceMnt={walletBalanceMnt}
             walletGreeting={walletGreeting}
+            onWalletConnect={(addr, bal, greeting) => {
+              setWalletAddress(addr);
+              setWalletBalanceMnt(bal);
+              setWalletGreeting(greeting);
+            }}
           />
         </div>
 

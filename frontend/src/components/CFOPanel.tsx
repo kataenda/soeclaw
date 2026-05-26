@@ -10,9 +10,10 @@ interface Props {
   walletAddress?: string;
   walletBalanceMnt?: number;
   walletGreeting?: string;
+  onWalletConnect?: (addr: string, balance: number, greeting: string) => void;
 }
 
-export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '' }: Props) {
+export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '', onWalletConnect }: Props) {
   const { t } = useTranslation();
   const [msgs,      setMsgs]      = useState<ChatMsg[]>([{ role: 'ai', text: t('cfo_welcome') }]);
   const [pendingTx, setPendingTx] = useState<TxData | null>(null);
@@ -58,6 +59,22 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
       if (data.success) {
         const tvl = data.dex_tvl > 0 ? `$${(data.dex_tvl / 1_000_000).toFixed(2)}M` : '—';
         const vol = data.dex_volume_24h > 0 ? `$${(data.dex_volume_24h / 1_000_000).toFixed(2)}M` : '—';
+
+        // Notify parent so Agent Wallet panel reflects the connection
+        if (onWalletConnect) {
+          try {
+            const walletRes = await fetch(`${API_URL}/api/wallet/analyze`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ address: addr }),
+            });
+            const walletData = await walletRes.json();
+            onWalletConnect(addr, walletData.balance_mnt ?? 0, walletData.greeting ?? '');
+          } catch {
+            onWalletConnect(addr, 0, '');
+          }
+        }
+
         setMsgs(prev => [...prev, {
           role: 'ai',
           text: `✅ Wallet connected to Byreal!\n\n🔗 ${addr.slice(0,6)}…${addr.slice(-4)}\n⚡ Status: Active\n📊 DEX TVL: ${tvl}\n📈 Vol 24h: ${vol}\n🏊 Pools: ${data.dex_pools}\n\nAgent will now route swaps through your wallet on Byreal CLMM DEX.`,

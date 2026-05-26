@@ -6,11 +6,22 @@ import WalletConnect from './WalletConnect';
 interface Props {
   onConnect?: (address: string, balanceMnt: number, greeting: string) => void;
   onDisconnect?: () => void;
+  externalAddress?: string;
+  externalBalance?: number;
 }
 
-const WalletPanel: React.FC<Props> = ({ onConnect, onDisconnect }) => {
+const WalletPanel: React.FC<Props> = ({ onConnect, onDisconnect, externalAddress, externalBalance }) => {
   const { t } = useTranslation();
   const [userWallet, setUserWallet] = useState<{ address: string; balanceMnt: number } | null>(null);
+
+  // Reflect wallet connected externally (e.g. via CFO chat)
+  React.useEffect(() => {
+    if (externalAddress && !userWallet) {
+      setUserWallet({ address: externalAddress, balanceMnt: externalBalance ?? 0 });
+    } else if (!externalAddress && userWallet) {
+      setUserWallet(null);
+    }
+  }, [externalAddress, externalBalance]);
 
   const shortAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
