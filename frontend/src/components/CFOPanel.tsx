@@ -138,7 +138,7 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
   const regime = health?.regime ?? 'NEUTRAL';
   const regimeColor = regime === 'RISK_OFF' ? '#ff3366' : regime === 'RISK_ON' ? '#00e87a' : '#f59e0b';
 
-  const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4')];
+  const QUICK = ['Start Trading', 'Stop Trading', t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4'), 'Alpha scorecard', 'Market status'];
   const BYREAL_QUICK = [
     // ── Discovery ──
     'Byreal help',
