@@ -1042,6 +1042,156 @@ async def byreal_perps_signals():
         return {"success": False, "error": str(e)}
 
 
+@app.get("/api/byreal/perps/account")
+async def byreal_perps_account():
+    """Perps account info (equity, margin, PnL)."""
+    try:
+        from byreal import get_perps_account
+        return _byreal_wrap(await get_perps_account())
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/perps/positions")
+async def byreal_perps_positions():
+    """Open perps positions."""
+    try:
+        from byreal import get_perps_positions
+        return _byreal_wrap(await get_perps_positions())
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/perps/orders")
+async def byreal_perps_orders():
+    """Open perps orders."""
+    try:
+        from byreal import get_perps_orders
+        return _byreal_wrap(await get_perps_orders())
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/byreal/perps/history")
+async def byreal_perps_history():
+    """Perps trade history."""
+    try:
+        from byreal import get_perps_history
+        return _byreal_wrap(await get_perps_history())
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class PerpsCancelOrderRequest(BaseModel):
+    oid: str
+
+@app.post("/api/byreal/perps/order/cancel")
+async def byreal_cancel_order(req: PerpsCancelOrderRequest):
+    """Cancel a perps order by ID."""
+    try:
+        from byreal import cancel_perps_order
+        return _byreal_wrap(await asyncio.wait_for(cancel_perps_order(req.oid), timeout=20))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Cancel timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/byreal/perps/order/cancel-all")
+async def byreal_cancel_all_orders():
+    """Cancel all open perps orders."""
+    try:
+        from byreal import cancel_all_perps_orders
+        return _byreal_wrap(await asyncio.wait_for(cancel_all_perps_orders(), timeout=20))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Cancel-all timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class PerpsClosePositionRequest(BaseModel):
+    symbol: str
+
+@app.post("/api/byreal/perps/position/close")
+async def byreal_close_position(req: PerpsClosePositionRequest):
+    """Close a perps position at market price."""
+    try:
+        from byreal import close_perps_position
+        return _byreal_wrap(await asyncio.wait_for(close_perps_position(req.symbol), timeout=30))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Close position timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/byreal/perps/position/close-all")
+async def byreal_close_all_positions():
+    """Close all open perps positions at market price."""
+    try:
+        from byreal import close_all_perps_positions
+        return _byreal_wrap(await asyncio.wait_for(close_all_perps_positions(), timeout=30))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Close-all timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class PerpsLeverageRequest(BaseModel):
+    symbol: str
+    leverage: int
+
+@app.post("/api/byreal/perps/position/leverage")
+async def byreal_set_leverage(req: PerpsLeverageRequest):
+    """Set leverage for a perps position."""
+    try:
+        from byreal import set_position_leverage
+        return _byreal_wrap(await asyncio.wait_for(set_position_leverage(req.symbol, req.leverage), timeout=20))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Set leverage timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class PerpsTpslRequest(BaseModel):
+    symbol: str
+    tp: Optional[float] = None
+    sl: Optional[float] = None
+
+@app.post("/api/byreal/perps/position/tpsl")
+async def byreal_set_tpsl(req: PerpsTpslRequest):
+    """Set take-profit / stop-loss for a perps position."""
+    try:
+        from byreal import set_position_tpsl
+        return _byreal_wrap(await asyncio.wait_for(set_position_tpsl(req.symbol, req.tp, req.sl), timeout=20))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Set TP/SL timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class PerpsLimitOrderRequest(BaseModel):
+    symbol: str
+    side: str
+    size: float
+    price: float
+    tp: Optional[float] = None
+    sl: Optional[float] = None
+
+@app.post("/api/byreal/perps/order/limit")
+async def byreal_limit_order(req: PerpsLimitOrderRequest):
+    """Place a perps limit order."""
+    try:
+        from byreal import place_limit_order
+        return _byreal_wrap(await asyncio.wait_for(
+            place_limit_order(req.symbol, req.side, req.size, req.price, req.tp, req.sl),
+            timeout=30,
+        ))
+    except asyncio.TimeoutError:
+        return {"success": False, "error": "Limit order timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/api/byreal/swap/preview")
 async def byreal_swap_preview(from_token: str = "SOL", to_token: str = "USDC", amount: float = 1.0):
     """Preview a token swap on Byreal CLMM DEX."""
@@ -2882,6 +3032,8 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
     capital  = settings.capital_usd if settings else 10000
     profile  = settings.risk_profile if settings else "balanced"
 
+    byreal_context = ""
+
     # ── Byreal direct responses (no Claude needed) ───────────────────────────
     if any(k in msg_lower for k in ["perps signal", "perps signals", "byreal signal",
                                      "signal byreal", "byreal perps"]):
@@ -3109,6 +3261,123 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
             return {"reply": "[BYREAL PERPS]\nNo recent trades.", "ai": True, "byreal": True}
         except Exception as e:
             return {"reply": f"[BYREAL HISTORY]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: open orders list ─────────────────────────────────────────────
+    if any(k in msg_lower for k in ["order list", "open order", "daftar order",
+                                     "perps order", "my order"]):
+        try:
+            from byreal import get_perps_orders
+            data = await asyncio.wait_for(get_perps_orders(), timeout=10)
+            raw  = data.get("data", data)
+            orders = raw if isinstance(raw, list) else raw.get("orders", [])
+            if orders:
+                lines = "\n".join([
+                    f"• #{o.get('oid', o.get('id','?'))}  {o.get('coin', o.get('symbol','?'))}  "
+                    f"{o.get('side','?')}  Size: {o.get('sz', o.get('size','?'))}  "
+                    f"Limit: ${o.get('limitPx', o.get('price','?'))}"
+                    for o in orders[:8]
+                ])
+                return {"reply": f"[BYREAL PERPS — OPEN ORDERS]\n\n{lines}\n\nTotal: {len(orders)} orders",
+                        "ai": True, "byreal": True}
+            return {"reply": "[BYREAL PERPS]\nNo open orders.", "ai": True, "byreal": True}
+        except Exception as e:
+            return {"reply": f"[BYREAL ORDERS]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: cancel all orders ─────────────────────────────────────────────
+    if any(k in msg_lower for k in ["cancel all order", "batalkan semua order",
+                                     "cancel-all order", "hapus semua order"]):
+        try:
+            from byreal import cancel_all_perps_orders
+            data = await asyncio.wait_for(cancel_all_perps_orders(), timeout=20)
+            raw  = data.get("data", data)
+            cancelled = raw.get("cancelled", raw.get("count", "all"))
+            return {"reply": f"[BYREAL PERPS]\n✅ All orders cancelled.\nCancelled: {cancelled}",
+                    "ai": True, "byreal": True}
+        except Exception as e:
+            return {"reply": f"[BYREAL CANCEL ALL]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: close all positions ───────────────────────────────────────────
+    if any(k in msg_lower for k in ["close all position", "tutup semua posisi",
+                                     "close-all position", "liquidate all"]):
+        try:
+            from byreal import close_all_perps_positions
+            data = await asyncio.wait_for(close_all_perps_positions(), timeout=30)
+            raw  = data.get("data", data)
+            closed = raw.get("closed", raw.get("count", "all"))
+            return {"reply": f"[BYREAL PERPS]\n✅ All positions closed at market.\nClosed: {closed}",
+                    "ai": True, "byreal": True}
+        except Exception as e:
+            return {"reply": f"[BYREAL CLOSE ALL]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: close specific position ──────────────────────────────────────
+    _close_match = next((c.upper() for c in _COINS if c in msg_lower), None)
+    if _close_match and any(k in msg_lower for k in ["close position", "tutup posisi", "close perps",
+                                                      "close-market", "exit position"]):
+        try:
+            from byreal import close_perps_position
+            data = await asyncio.wait_for(close_perps_position(f"{_close_match}USDT"), timeout=20)
+            raw  = data.get("data", data)
+            price = raw.get("price", raw.get("avgPrice", "market"))
+            size  = raw.get("size", raw.get("sz", "?"))
+            return {
+                "reply": (
+                    f"[BYREAL PERPS — CLOSE POSITION]\n\n"
+                    f"✅ {_close_match} position closed at market\n"
+                    f"Price : ${price}\n"
+                    f"Size  : {size}\n\n"
+                    f"via @byreal-io/byreal-perps-cli"
+                ),
+                "ai": True, "byreal": True,
+            }
+        except Exception as e:
+            return {"reply": f"[BYREAL CLOSE {_close_match}]\nCLI unavailable: {str(e)[:100]}",
+                    "ai": True, "byreal": True}
+
+    # ── Byreal: set leverage ──────────────────────────────────────────────────
+    _lev_match = next((c.upper() for c in _COINS if c in msg_lower), None)
+    _lev_num   = next((int(w.replace("x","")) for w in msg_lower.split()
+                       if w.replace("x","").isdigit() and 1 <= int(w.replace("x","")) <= 50), None)
+    if _lev_match and _lev_num and any(k in msg_lower for k in ["leverage", "lev", "set leverage"]):
+        try:
+            from byreal import set_position_leverage
+            data = await asyncio.wait_for(set_position_leverage(f"{_lev_match}USDT", _lev_num), timeout=15)
+            raw  = data.get("data", data)
+            return {
+                "reply": (
+                    f"[BYREAL PERPS — LEVERAGE]\n\n"
+                    f"✅ {_lev_match} leverage set to {_lev_num}x\n\n"
+                    f"via @byreal-io/byreal-perps-cli"
+                ),
+                "ai": True, "byreal": True,
+            }
+        except Exception as e:
+            return {"reply": f"[BYREAL LEVERAGE]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
+
+    # ── Byreal: set TP/SL ────────────────────────────────────────────────────
+    _tpsl_match = next((c.upper() for c in _COINS if c in msg_lower), None)
+    if _tpsl_match and any(k in msg_lower for k in ["take profit", "stop loss", "tpsl", "tp sl", "set tp", "set sl"]):
+        import re as _re
+        _prices = [float(p) for p in _re.findall(r'\d+(?:\.\d+)?', msg) if float(p) > 10]
+        _tp = _prices[0] if len(_prices) > 0 else None
+        _sl = _prices[1] if len(_prices) > 1 else None
+        try:
+            from byreal import set_position_tpsl
+            data = await asyncio.wait_for(set_position_tpsl(f"{_tpsl_match}USDT", _tp, _sl), timeout=15)
+            raw  = data.get("data", data)
+            tp_str = f"${_tp}" if _tp else "unchanged"
+            sl_str = f"${_sl}" if _sl else "unchanged"
+            return {
+                "reply": (
+                    f"[BYREAL PERPS — TP/SL]\n\n"
+                    f"✅ {_tpsl_match} TP/SL updated\n"
+                    f"Take Profit : {tp_str}\n"
+                    f"Stop Loss   : {sl_str}\n\n"
+                    f"via @byreal-io/byreal-perps-cli"
+                ),
+                "ai": True, "byreal": True,
+            }
+        except Exception as e:
+            return {"reply": f"[BYREAL TP/SL]\nCLI unavailable: {str(e)[:100]}", "ai": True, "byreal": True}
 
     # ── Real Claude AI ────────────────────────────────────────────────────────
     if anthropic_client:

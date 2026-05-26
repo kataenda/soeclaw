@@ -122,6 +122,65 @@ async def execute_market_order(symbol: str, side: str, size: float,
     if sl:
         extra += f" --sl {sl}"
     return await _run(
-        f"{_PERPS_CMD} order market {shlex.quote(symbol)} {side.lower()} {size}"
+        f"{_PERPS_CMD} order market {side.lower()} {size} {shlex.quote(symbol)}"
         f" --leverage {leverage}{extra} -o json"
     )
+
+
+async def place_limit_order(symbol: str, side: str, size: float, price: float,
+                            tp: float | None = None, sl: float | None = None) -> dict:
+    extra = ""
+    if tp:
+        extra += f" --tp {tp}"
+    if sl:
+        extra += f" --sl {sl}"
+    return await _run(
+        f"{_PERPS_CMD} order limit {side.lower()} {size} {shlex.quote(symbol)} {price}{extra} -o json"
+    )
+
+
+async def get_perps_orders() -> dict:
+    return await _run(f"{_PERPS_CMD} order list -o json")
+
+
+async def cancel_perps_order(oid: str) -> dict:
+    return await _run(f"{_PERPS_CMD} order cancel {shlex.quote(str(oid))} -o json")
+
+
+async def cancel_all_perps_orders() -> dict:
+    return await _run(f"{_PERPS_CMD} order cancel-all -y -o json")
+
+
+async def close_perps_position(symbol: str) -> dict:
+    return await _run(f"{_PERPS_CMD} position close-market {shlex.quote(symbol)} -o json")
+
+
+async def close_all_perps_positions() -> dict:
+    return await _run(f"{_PERPS_CMD} position close-all -y -o json")
+
+
+async def set_position_tpsl(symbol: str, tp: float | None = None, sl: float | None = None) -> dict:
+    extra = ""
+    if tp:
+        extra += f" --tp {tp}"
+    if sl:
+        extra += f" --sl {sl}"
+    return await _run(f"{_PERPS_CMD} position tpsl {shlex.quote(symbol)}{extra} -o json")
+
+
+async def set_position_leverage(symbol: str, leverage: int) -> dict:
+    return await _run(f"{_PERPS_CMD} position leverage {shlex.quote(symbol)} {leverage} -o json")
+
+
+async def get_perps_catalog() -> dict:
+    return await _run(f"{_PERPS_CMD} catalog list -o json")
+
+
+# ── Byreal DEX (additional) ───────────────────────────────────────────────────
+
+async def claim_lp_fees() -> dict:
+    return await _run(f"{_dex_cmd()} positions claim -o json --non-interactive")
+
+
+async def get_pool_info(pool_id: str) -> dict:
+    return await _run(f"{_dex_cmd()} pools info {shlex.quote(pool_id)} -o json --non-interactive")

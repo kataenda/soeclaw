@@ -127,7 +127,20 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
   const regimeColor = regime === 'RISK_OFF' ? '#ff3366' : regime === 'RISK_ON' ? '#00e87a' : '#f59e0b';
 
   const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4')];
-  const BYREAL_QUICK = ['Byreal help', 'Byreal perps signals', 'Swap USDT → MNT preview', 'Top CLMM pools', 'Connect Byreal', 'Perps account info', 'ETH signal detail', 'Wallet balance'];
+  const BYREAL_QUICK = [
+    'Byreal help',
+    'Byreal perps signals',
+    'Perps account info',
+    'Perps positions',
+    'Perps order list',
+    'Account history',
+    'ETH signal detail',
+    'BTC signal detail',
+    'Swap USDT → MNT preview',
+    'Top CLMM pools',
+    'Wallet balance',
+    'Connect Byreal',
+  ];
 
   return (
     <>
