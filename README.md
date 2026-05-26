@@ -1,81 +1,134 @@
-﻿# SoeClaw OS — Autonomous AI Trading Platform on Mantle
+# SoeClaw AI CFO
 
-> Four autonomous AI agents trade BTC/ETH/MNT with verifiable on-chain records, ERC-8004 identity, real Byreal DEX integration, and dynamic USDY/mETH RWA allocation — all streaming live to a cyberpunk dashboard.
+> Autonomous AI trading agent on Mantle L2 — every decision permanently recorded on-chain via ERC-8004.
 
-**Live Demo:** [soeclaw.vercel.app](https://soeclaw.vercel.app)  
-**Backend:** [soeclaw-production.up.railway.app](https://soeclaw-production.up.railway.app)  
-**GitHub:** [github.com/kataenda/soeclaw](https://github.com/kataenda/soeclaw)
-
----
-
-## Deployed Contracts (Mantle Sepolia Testnet — Chain ID 5003)
-
-| Contract | Address | Explorer |
-|---|---|---|
-| SoeClaw Trading Engine | [`0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8`](https://sepolia.mantlescan.xyz/address/0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8) | Mantle Sepolia |
-| ERC-8004 IdentityRegistry | [`0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d`](https://sepolia.mantlescan.xyz/address/0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d) | Mantle Sepolia |
+**Live Demo:** https://soeclaw.vercel.app  
+**Contract (Mantle Mainnet):** `0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8`  
+**AgentIdentityRegistry (ERC-8004):** `0x389DF777f009d32c4B6451F159c763c7f9d15803`  
+**Chain:** Mantle Mainnet (Chain ID 5000)  
+**Explorer:** https://explorer.mantle.xyz/address/0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8
 
 ---
 
-## Hackathon Tracks
+## What is SoeClaw?
 
-| Track | Approach | Status |
-|---|---|---|
-| **Alpha & Data** (Mirana Ventures) | 4 AI quant agents + CoinGecko + backtesting engine | ✅ |
-| **AI × RWA** (Mantle Network) | Dynamic USDY/mETH allocation by market regime | ✅ |
-| **Agentic Economy** (Byreal) | Real `@byreal-io/byreal-cli` + perps signals | ✅ |
-| **Best UI/UX** | Cyberpunk terminal, 8 languages, live WebSocket | ✅ |
+SoeClaw is a **Personal AI CFO** — an autonomous crypto trading platform built on Mantle L2. Four specialized AI agents continuously scan markets using Byreal Perps CLI signals, make BUY/SELL/HOLD decisions, and record every decision permanently on Mantle blockchain as an ERC-8004 on-chain proof.
 
-**One-line pitches:**
-- *Alpha & Data:* "Four autonomous AI quant agents trade BTC/ETH/MNT with verifiable on-chain records via ERC-8004 identity on Mantle Sepolia."
-- *AI × RWA:* "AI dynamically allocates between USDY (US T-Bills) and mETH (ETH staking) based on real-time market regime detection."
-- *Agentic Economy:* "AI agents interact with Byreal's CLMM DEX and Perps markets via the official Byreal SDK, with on-chain skill registration via ERC-8004."
+Users interact through a natural language CFO chat interface — asking about market conditions, controlling agents, deploying tokens, and monitoring portfolio performance — all without needing DeFi expertise.
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        FRONTEND (Vercel)                          │
-│  React 19 + TypeScript + Vite                                     │
-│  Tabs: Market | Agents | Positions | Leaderboard | Insights       │
-│  Insights: Alpha Feed | RWA Yields | Byreal DEX | DevTools | Economy│
-└───────────────────────┬──────────────────────────────────────────┘
-                        │ WebSocket (wss://) + REST (https://)
-┌───────────────────────▼──────────────────────────────────────────┐
-│                     BACKEND (Railway)                             │
-│  FastAPI + SQLite + asyncio                                       │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Agent Loop (every 10s)                                       │  │
-│  │   CoinGecko prices → Claude AI decision → broadcast()       │  │
-│  │   Strategies: Momentum | MeanReversion | Trend | Volatility  │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Alpha & Data Layer                                           │  │
-│  │   Whale tracker (Mantle on-chain) | Anomaly detector        │  │
-│  │   RSI/volatility signals | Alert dispatcher (Telegram/Discord│  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ RWA Layer                                                    │  │
-│  │   USDY (Ondo Finance, US T-Bills, ~5% APY)                  │  │
-│  │   mETH (Mantle LSP, ETH staking, ~3.8% APR)                 │  │
-│  │   Market-regime-driven allocation                            │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Byreal SDK Layer (@byreal-io/byreal-cli)                     │  │
-│  │   CLMM DEX: overview, pools, tokens, swap preview           │  │
-│  │   Perps CLI: AI signals, positions, account                  │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-└───────────────────────┬──────────────────────────────────────────┘
-                        │ Web3.py
-┌───────────────────────▼──────────────────────────────────────────┐
-│               MANTLE SEPOLIA TESTNET (Chain ID 5003)              │
-│   SoeClaw.sol    → recordTrade(), triggerAgent()                  │
-│   ERC-8004.sol   → registerAgent(), recordTrade(), mintSkillNFT() │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                   Frontend (Vercel)                  │
+│   React + TypeScript · CFO Chat · Live Dashboard    │
+└──────────────────┬──────────────────────────────────┘
+                   │ REST + WebSocket
+┌──────────────────▼──────────────────────────────────┐
+│                Backend (Railway)                     │
+│   FastAPI · Agent Loop · Oracle · Skills Engine     │
+│                                                      │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │ Agent Loop  │  │  CFO Chat    │  │  Deploy    │ │
+│  │ 60s ticks   │  │  Claude AI   │  │  ERC-20    │ │
+│  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘ │
+│         │                │                 │        │
+│  ┌──────▼──────────────────────────────────▼──────┐ │
+│  │              Byreal CLI Layer                   │ │
+│  │  byreal-perps-cli (signals, orders, positions)  │ │
+│  │  byreal-cli (pools, swap, CLMM, wallet)         │ │
+│  └─────────────────────────────────────────────────┘ │
+│                                                      │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │            Mantle Blockchain Layer               │ │
+│  │  MantleClient (web3.py) · ERC-8004 Identity     │ │
+│  │  SoeClaw.addTrade() · AgentIdentityRegistry     │ │
+│  └─────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
 ```
+
+---
+
+## AI Agents
+
+| Agent | Token ID | Specialty | Signal Category |
+|---|---|---|---|
+| AlphaQuant | 0 | Momentum + technical analysis | Moderate |
+| WhaleWatcher | 1 | Volume + whale flow | Aggressive |
+| MacroAnalyzer | 2 | Macro + sentiment | Conservative |
+| RiskManager | 3 | Risk-adjusted returns | Conservative |
+
+Each agent has an **ERC-8004 on-chain identity** with reputation score that grows with every verified decision.
+
+---
+
+## Key Features
+
+### Signal-Driven Trading
+- **Primary engine:** `byreal-perps-cli signal scan` — real Hyperliquid signals (RSI, score, direction)
+- Agents pick best signal from their preferred category (aggressive/moderate/conservative)
+- Every BUY/SELL decision recorded on Mantle via `SoeClaw.addTrade()` + `AgentIdentityRegistry.recordTrade()`
+
+### ERC-8004 On-Chain Identity
+- Each agent holds an ERC-8004 NFT on Mantle mainnet
+- Reputation score updates on-chain after every trade
+- Permanent, verifiable audit trail — no trust required
+
+### CFO Chat (Natural Language)
+```
+"perps signals"                     → live Byreal signal scan
+"BTC signal detail"                 → technical analysis
+"deploy token SOE supply 1000000"   → compile + deploy ERC-20 to Mantle
+"start trading"                     → activate all 4 agents
+"stop agent"                        → halt + close all positions
+"alpha scorecard"                   → win rate, sharpe ratio, P&L
+```
+
+### Byreal Skills Integration
+- **byreal-perps-cli:** Hyperliquid perpetuals — signals, orders, positions, leverage, TP/SL
+- **byreal-cli:** Solana CLMM DEX — pools, swap, LP positions, wallet balance
+- **agentskills format:** SoeClaw published as discoverable SKILL.md
+
+### Smart Contract Deployment via Chat
+- Type `deploy token <Name> <SYMBOL> supply <amount>` in CFO chat
+- Backend compiles Solidity ERC-20 + deploys to Mantle mainnet
+- Returns contract address + Mantle explorer link instantly
+
+### Alpha Scorecard
+- Portfolio P&L vs BTC baseline
+- Win rate + Sharpe ratio
+- Market health score (0–100)
+- Real Fear & Greed Index integration
+
+---
+
+## On-Chain Integration
+
+### SoeClaw Contract
+```solidity
+// Every agent decision recorded on-chain
+function addTrade(
+    string agentName,
+    string symbol,
+    string action,      // "BUY" / "SELL" / "HOLD"
+    uint256 confidence  // 0-100
+) external;
+```
+
+### AgentIdentityRegistry (ERC-8004)
+```solidity
+// Agent reputation grows with every verified trade
+function recordTrade(uint256 agentId, string agentName, string symbol, string action, uint256 confidence) external;
+function updateReputation(uint256 agentId, int256 delta) external;
+function getAgentReputation(uint256 agentId) external view returns (int256);
+```
+
+### AI Oracle
+- Listens for `AIRequested` events on SoeClaw contract
+- Runs AI inference → calls `fulfillAIResult()` on-chain
+- Closes the loop: on-chain request → AI response → on-chain proof
 
 ---
 
@@ -83,192 +136,118 @@
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, Recharts |
-| Backend | FastAPI, SQLAlchemy, SQLite, asyncio |
-| AI Engine | Anthropic Claude (claude-haiku-4-5) |
-| Market Data | CoinGecko API (free, real-time + 7-day history) |
-| Blockchain | Web3.py, Mantle Sepolia Testnet (Chain ID 5003) |
-| Smart Contract | Solidity 0.8.20, ERC-8004 agent identity standard |
-| DEX Integration | @byreal-io/byreal-cli, @byreal-io/byreal-perps-cli |
-| Deployment | Vercel (frontend), Railway (backend) |
-| i18n | 8 languages: EN, ID, ZH-CN, JA, KO, AR, FR, ES |
+| Frontend | React 18, TypeScript, Vite, WebSocket |
+| Backend | Python 3.10, FastAPI, uvicorn |
+| Blockchain | web3.py, Mantle Mainnet (Chain ID 5000) |
+| AI | Claude (Anthropic) + rule-based fallback |
+| Trading CLI | @byreal-io/byreal-perps-cli, @byreal-io/byreal-cli |
+| Database | PostgreSQL (Railway) / SQLite (local) |
+| Deployment | Railway (backend), Vercel (frontend) |
+| Price Feed | Bybit WebSocket + CoinGecko API |
+| Contracts | Solidity 0.8.20, py-solc-x |
 
 ---
 
-## AI Agent Strategies
+## Deployed Contracts
 
-| Agent | Strategy | Logic |
+| Contract | Address | Network |
 |---|---|---|
-| AlphaQuant | Momentum | Buys on upward momentum, sells on reversal |
-| WhaleWatcher | Mean-Reversion | Buys oversold conditions, sells overbought |
-| RiskManager | Volatility-Adjusted | Scales conviction by volatility regime |
-| MacroAnalyzer | Trend-Following | Follows 7-day trend with pullback entries |
-
-Each agent has an **ERC-8004 on-chain identity** on Mantle Sepolia. Every BUY/SELL decision triggers `recordTrade()` on-chain, creating a permanent verifiable record.
+| SoeClaw | `0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8` | Mantle Mainnet |
+| AgentIdentityRegistry (ERC-8004) | `0x389DF777f009d32c4B6451F159c763c7f9d15803` | Mantle Mainnet |
 
 ---
 
-## Quick Start (Local)
+## Setup & Run
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- Anthropic API key → [console.anthropic.com](https://console.anthropic.com)
+- Node.js 20+, Python 3.10+
+- `npm install -g @byreal-io/byreal-perps-cli @byreal-io/byreal-cli`
 
-### 1. Clone & configure
-
-```bash
-git clone https://github.com/kataenda/soeclaw.git
-cd soeclaw
-cp backend/.env.example backend/.env
-```
-
-Edit `backend/.env`:
-```env
-PRIVATE_KEY=your_wallet_private_key_without_0x
-MANTLE_CONTRACT_ADDRESS=0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8
-IDENTITY_REGISTRY_ADDRESS=0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d
-AGENT_API_KEY=sk-ant-...
-JWT_SECRET=generate_with_python_secrets_token_hex_32
-```
-
-### 2. Run backend
+### Backend
 
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-# → http://localhost:8000
+cp .env.example .env   # fill in PRIVATE_KEY, AGENT_API_KEY, etc.
+uvicorn main:app --reload --port 8000
 ```
 
-### 3. Run frontend
+### Frontend
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env   # set VITE_API_URL=http://localhost:8000
 npm run dev
-# → http://localhost:5173
 ```
 
----
+### Environment Variables
 
-## API Reference
-
-### Core
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/market` | GET | Live prices: BTC, ETH, MNT |
-| `/api/agents` | GET | Agent list with performance metrics |
-| `/api/trades` | GET | Last 50 trades with tx hashes |
-| `/api/thought-stream` | GET | Last 100 agent decisions |
-| `/api/wallet` | GET | Wallet address + MNT balance from chain |
-| `/api/backtest/{symbol}` | GET | 7-day backtest results per strategy |
-| `/ws` | WebSocket | Real-time: PRICE_UPDATE, THOUGHT, TRADE |
-
-### Alpha & Data
-| Endpoint | Description |
-|---|---|
-| `/api/alpha/alerts` | Live anomaly alerts (whale, RSI, volatility) |
-| `/api/alpha/whales` | Recent on-chain whale transfers on Mantle |
-
-### RWA
-| Endpoint | Description |
-|---|---|
-| `/api/rwa/yields` | USDY + mETH yield data + AI allocation recommendation |
-
-### Byreal DEX (Track 3)
-| Endpoint | Description |
-|---|---|
-| `/api/byreal/overview` | CLMM DEX global stats (TVL, volume, fees) |
-| `/api/byreal/pools` | Top liquidity pools |
-| `/api/byreal/pools/search?q=SOL` | Search pools by token |
-| `/api/byreal/tokens` | Token list with prices |
-| `/api/byreal/perps/signals` | AI-generated perpetuals signals |
-| `/api/byreal/swap/preview` | Preview swap output before execution |
-
-### Agentic Economy
-| Endpoint | Description |
-|---|---|
-| `/api/agents/economy` | Agent balances in MNT |
-| `/api/agents/economy/transfer` | Transfer MNT between agents |
-| `/api/agents/skills/register` | Register a new agent skill |
-| `/api/agents/skills/mint` | Mint skill NFT via ERC-8004 |
-
----
-
-## Deployment
-
-### Backend → Railway
-
-1. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub repo → `kataenda/soeclaw`
-2. The `railway.json` and `nixpacks.toml` are auto-detected
-3. Set environment variables in Railway dashboard:
-
-```
-PRIVATE_KEY=...
-AGENT_API_KEY=...
-JWT_SECRET=...  (generate: python -c "import secrets; print(secrets.token_hex(32))")
+```env
+PRIVATE_KEY=your_wallet_private_key
+MANTLE_NETWORK=mainnet
 MANTLE_CONTRACT_ADDRESS=0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8
-IDENTITY_REGISTRY_ADDRESS=0xAFc049fD17dEF8D9bDC0ed234675D90D4e3f607d
-BYBIT_ENABLED=true
+IDENTITY_REGISTRY_ADDRESS=0x389DF777f009d32c4B6451F159c763c7f9d15803
+AGENT_API_KEY=your_anthropic_key
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_password
+JWT_SECRET=your_jwt_secret
 ALLOWED_ORIGINS=https://soeclaw.vercel.app
 ```
 
-### Frontend → Vercel
-
-1. Go to [vercel.com](https://vercel.com) → Add New Project → Import `kataenda/soeclaw`
-2. Set **Root Directory** = `frontend`
-3. Set environment variables:
-
-```
-VITE_API_URL=https://soeclaw-production.up.railway.app
-VITE_WS_URL=wss://soeclaw-production.up.railway.app
-```
-
 ---
 
-## Smart Contract Functions
+## API Endpoints
 
-```solidity
-// SoeClaw.sol — Trade recording
-function recordTrade(string agentName, string symbol, string action, uint256 confidence)
-function triggerAgent(string agentName)
-function getAgentReputation(string agentName) → uint256
-
-// ERC-8004 IdentityRegistry — Agent identity
-function registerAgent(address agentAddress, string name, string metadata) → uint256 agentId
-function recordTrade(uint256 agentId, string symbol, string action, uint256 amount) → uint256 tradeId
-function mintSkillNFT(uint256 agentId, string skillName, string metadata) → uint256 tokenId
+```
+GET  /api/agent/status        — Agent running state
+POST /api/agent/start         — Start trading loop
+POST /api/agent/stop          — Stop + close all Byreal positions
+GET  /api/trades              — Recent on-chain trades
+GET  /api/cfo/health          — Market health score (0–100) + regime
+GET  /api/cfo/alpha-scorecard — Alpha vs BTC, win rate, sharpe ratio
+POST /api/cfo/chat            — CFO natural language chat
+POST /api/deploy/mantle       — Deploy ERC-20 token to Mantle
+GET  /api/skills              — List registered agent skills
+GET  /api/skills/{name}       — Fetch SKILL.md for a skill
 ```
 
 ---
 
-## Environment Variables
+## Hackathon Tracks
 
-### Backend (`backend/.env`)
+### Agentic Economy Track (Byreal) — Primary
+SoeClaw is a **Personal CFO Agent** using:
+- `byreal-perps-cli` as primary signal + execution engine
+- `byreal-cli` for Solana CLMM DEX operations
+- agentskills open format (SKILL.md) for skill composition
+- Deployed on Mantle mainnet with full ERC-8004 verification
 
-| Variable | Required | Description |
-|---|---|---|
-| `PRIVATE_KEY` | Yes | Wallet private key (no 0x prefix) |
-| `MANTLE_CONTRACT_ADDRESS` | Yes | SoeClaw contract address |
-| `IDENTITY_REGISTRY_ADDRESS` | Yes | ERC-8004 registry address |
-| `AGENT_API_KEY` | Recommended | Claude API for real AI decisions |
-| `JWT_SECRET` | Yes | Random 32-byte hex for auth tokens |
-| `ALLOWED_ORIGINS` | Yes | Frontend URLs (comma-separated) |
-| `BYBIT_ENABLED` | Production | Set to `true` to enable Bybit WS |
-| `TELEGRAM_BOT_TOKEN` | Optional | For alpha alert notifications |
-| `DISCORD_WEBHOOK_URL` | Optional | For alpha alert notifications |
-| `WHALE_THRESHOLD_MNT` | Optional | MNT threshold for whale alerts (default: 500) |
+### Alpha & Data Track (Mirana Ventures)
+**[AI-Driven] Trading Strategy:**
+- 4 specialized agents with distinct risk profiles
+- Every trade verifiable on Mantle explorer
+- Alpha scorecard: win rate, Sharpe ratio, P&L vs BTC
+- Live backtesting engine
 
-### Frontend (`frontend/.env.production`)
-
-| Variable | Description |
-|---|---|
-| `VITE_API_URL` | Backend base URL (https://) |
-| `VITE_WS_URL` | Backend WebSocket URL (wss://) |
+### AI & RWA Track (Mantle Network)
+**RWA yield module:**
+- AI-driven tokenized asset allocation
+- Portfolio rebalancing recorded on Mantle blockchain
+- Blended APY tracking across RWA categories
 
 ---
 
-## License
+## One-Line Pitch
 
-MIT
+> SoeClaw is an autonomous AI CFO on Mantle L2 — four AI agents trade via Byreal signals, every decision permanently verified on-chain via ERC-8004, controlled entirely through natural language chat.
+
+---
+
+## Links
+
+- **Live Demo:** https://soeclaw.vercel.app
+- **GitHub:** https://github.com/kataenda/soeclaw
+- **Contract Explorer:** https://explorer.mantle.xyz/address/0xaDe0cE7d778D5050360221810ae814DAF9f6AFe8
+- **AgentIdentityRegistry:** https://explorer.mantle.xyz/address/0x389DF777f009d32c4B6451F159c763c7f9d15803
+- **SKILL.md:** https://github.com/kataenda/soeclaw/blob/main/SKILL.md
