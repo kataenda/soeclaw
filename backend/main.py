@@ -133,13 +133,20 @@ if _ADMIN_USER and _ADMIN_PASS:
 
 app = FastAPI(title="SoeClaw AI Terminal API")
 
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,https://soeclaw.vercel.app"
+)
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# Also allow any *.vercel.app preview deployments
+_allow_all = os.getenv("CORS_ALLOW_ALL", "false").lower() in ("1", "true", "yes")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"] if _allow_all else ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app" if not _allow_all else None,
+    allow_credentials=not _allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )
