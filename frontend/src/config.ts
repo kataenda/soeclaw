@@ -1,7 +1,7 @@
 ﻿export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 export const WS_URL  = import.meta.env.VITE_WS_URL  ?? 'ws://localhost:8000';
 
-const _net = (import.meta.env.VITE_MANTLE_NETWORK ?? 'sepolia').toLowerCase();
+const _net = (import.meta.env.VITE_MANTLE_NETWORK ?? 'mainnet').toLowerCase();
 
 export const MANTLE_NETWORK = _net === 'mainnet'
   ? {
@@ -9,7 +9,7 @@ export const MANTLE_NETWORK = _net === 'mainnet'
       chainName:        'Mantle',
       rpcUrl:           'https://rpc.mantle.xyz',
       explorerUrl:      'https://explorer.mantle.xyz',
-      displayName:      'Mantle Mainnet',
+      displayName:      'Mantle',
     }
   : {
       chainId:          '0x138B',
