@@ -4,7 +4,7 @@ import { useTranslation } from '../i18n/TranslationContext';
 import TxApprovalModal from './TxApprovalModal';
 import type { TxData } from './TxApprovalModal';
 
-interface ChatMsg { role: 'user' | 'ai'; text: string; powered?: boolean; byreal?: boolean }
+interface ChatMsg { role: 'user' | 'ai'; text: string; byreal?: boolean }
 
 interface Props {
   walletAddress?: string;
@@ -14,7 +14,6 @@ interface Props {
 
 export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '' }: Props) {
   const { t } = useTranslation();
-  const [aiPowered, setAiPowered] = useState(false);
   const [msgs,    setMsgs]    = useState<ChatMsg[]>([{ role: 'ai', text: t('cfo_welcome') }]);
   const [pendingTx, setPendingTx] = useState<TxData | null>(null);
   const [input,   setInput]   = useState('');
@@ -28,11 +27,10 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
 
-  // Show AI greeting when wallet connects
+  // Show greeting when wallet connects
   useEffect(() => {
     if (!walletGreeting) return;
-    setMsgs(prev => [...prev, { role: 'ai', text: walletGreeting, powered: true }]);
-    setAiPowered(true);
+    setMsgs(prev => [...prev, { role: 'ai', text: walletGreeting }]);
   }, [walletGreeting]);
 
   const connectToByreal = useCallback(async () => {
@@ -63,10 +61,8 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         setMsgs(prev => [...prev, {
           role: 'ai',
           text: `✅ Wallet connected to Byreal!\n\n🔗 ${addr.slice(0,6)}…${addr.slice(-4)}\n⚡ Status: Active\n📊 DEX TVL: ${tvl}\n📈 Vol 24h: ${vol}\n🏊 Pools: ${data.dex_pools}\n\nAgent will now route swaps through your wallet on Byreal CLMM DEX.`,
-          powered: true,
           byreal: true,
         }]);
-        setAiPowered(true);
       } else {
         setMsgs(prev => [...prev, { role: 'ai', text: `❌ Byreal connection failed: ${data.error}` }]);
       }
@@ -108,9 +104,8 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         }),
       });
       const data = await res.json();
-      if (data.ai === true) setAiPowered(true);
       const isByreal = data.reply?.includes('BYREAL') || data.reply?.includes('byreal') || data.reply?.includes('perps-cli') || data.reply?.includes('byreal-cli');
-      setMsgs(prev => [...prev, { role: 'ai', text: data.reply, powered: data.ai === true, byreal: isByreal }]);
+      setMsgs(prev => [...prev, { role: 'ai', text: data.reply, byreal: isByreal }]);
       if (data.tx_data) setPendingTx(data.tx_data);
     } catch {
       setMsgs(prev => [...prev, { role: 'ai', text: t('cfo_unreachable') }]);
@@ -150,7 +145,7 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         walletAddress={walletAddress}
         onClose={() => setPendingTx(null)}
         onSuccess={(hash) => {
-          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://sepolia.mantlescan.xyz/tx/${hash}`, powered: true }]);
+          setMsgs(prev => [...prev, { role: 'ai', text: `✅ Transaction sent!\nHash: ${hash.slice(0, 18)}…\nhttps://sepolia.mantlescan.xyz/tx/${hash}` }]);
           setPendingTx(null);
         }}
       />
@@ -162,9 +157,6 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#a78bfa', boxShadow: '0 0 8px rgba(167,139,250,0.8)', animation: 'pulse 2s infinite', flexShrink: 0 }} />
           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#a78bfa' }}>AI CFO</span>
-          {aiPowered && (
-            <span style={{ fontSize: '0.5rem', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 3, padding: '1px 4px', color: '#a78bfa', fontWeight: 700 }}>Claude</span>
-          )}
           {walletAddress && (
             <span style={{ fontSize: '0.5rem', background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.3)', borderRadius: 3, padding: '1px 4px', color: '#00e87a', fontWeight: 700 }}>
               {walletAddress.slice(0, 5)}…{walletAddress.slice(-3)}
@@ -187,16 +179,11 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', minHeight: 0 }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            {m.role === 'ai' && (
+            {m.role === 'ai' && m.byreal && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: '2px', paddingLeft: '2px' }}>
-                <span style={{ fontSize: '0.5rem', color: m.powered ? '#a78bfa' : '#4b5a72' }}>
-                  {m.powered ? 'Claude AI' : 'rule-based'}
+                <span style={{ fontSize: '0.48rem', padding: '1px 4px', borderRadius: 3, background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.35)', color: '#f7931a', fontWeight: 700 }}>
+                  ⚡ Byreal
                 </span>
-                {m.byreal && (
-                  <span style={{ fontSize: '0.48rem', padding: '1px 4px', borderRadius: 3, background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.35)', color: '#f7931a', fontWeight: 700 }}>
-                    ⚡ Byreal
-                  </span>
-                )}
               </div>
             )}
             <div style={{
