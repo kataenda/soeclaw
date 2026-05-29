@@ -326,6 +326,13 @@ async def fetch_prices():
                         price_cache[internal_sym]["price"]     = price
                         price_cache[internal_sym]["change_24h"] = round(chg, 2)
                         updated.append(internal_sym)
+                # FBTC/WMNT fallback if not on Bybit spot
+                if price_cache["FBTC/USDT"]["price"] <= 0 or price_cache["FBTC/USDT"]["price"] > 200000:
+                    price_cache["FBTC/USDT"]["price"] = price_cache["BTC/USDT"]["price"] * 0.9998
+                    price_cache["FBTC/USDT"]["change_24h"] = price_cache["BTC/USDT"]["change_24h"]
+                if price_cache["WMNT/USDT"]["price"] <= 0:
+                    price_cache["WMNT/USDT"]["price"] = price_cache["MNT/USDT"]["price"]
+                    price_cache["WMNT/USDT"]["change_24h"] = price_cache["MNT/USDT"]["change_24h"]
                 _last_price_fetch = now
                 for sym in price_history:
                     p = price_cache[sym]["price"]
