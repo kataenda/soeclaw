@@ -3057,27 +3057,12 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
         return {"reply": "Oke. Semua AI agent telah dihentikan. Trading dihentikan — tidak ada keputusan BUY/SELL yang akan dieksekusi sampai kamu aktifkan kembali.", "ai": True}
 
     if any(k in msg_lower for k in start_keywords):
-        # Wallet must be connected before trading can start
-        if not req.wallet_address:
-            return {
-                "reply": (
-                    "⚠️ Wallet belum terhubung!\n\n"
-                    "Untuk menjalankan trading, kamu perlu connect wallet dulu:\n"
-                    "1. Klik tombol CONNECT WALLET di panel kiri atas\n"
-                    "2. Approve koneksi di MetaMask / wallet kamu\n"
-                    "3. Setelah wallet terhubung, kirim perintah ini lagi\n\n"
-                    "Trading tidak dapat dijalankan tanpa wallet terkoneksi."
-                ),
-                "ai": True,
-            }
-        short_addr = f"{req.wallet_address[:6]}...{req.wallet_address[-4:]}"
         if agent_running:
             return {
                 "reply": (
-                    f"AI agents sudah aktif dan berjalan!\n\n"
-                    f"Wallet: {short_addr}\n"
-                    f"AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager "
-                    f"sedang scanning market secara real-time."
+                    "AI agents sudah aktif dan berjalan!\n\n"
+                    "AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager "
+                    "sedang scanning market secara real-time."
                 ),
                 "ai": True,
             }
@@ -3085,9 +3070,9 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
         await manager.broadcast({"type": "AGENT_STATUS", "data": {"running": True}})
         return {
             "reply": (
-                f"Siap! Wallet {short_addr} terhubung.\n\n"
-                f"Semua AI agent diaktifkan: AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager "
-                f"mulai scanning market dan mencatat keputusan ke Mantle blockchain."
+                "Semua AI agent diaktifkan!\n\n"
+                "AlphaQuant, WhaleWatcher, MacroAnalyzer, dan RiskManager "
+                "mulai scanning market dan mencatat keputusan ke Mantle blockchain."
             ),
             "ai": True,
         }
