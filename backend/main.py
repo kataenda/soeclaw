@@ -291,54 +291,53 @@ async def bybit_ws_loop():
 
 
 async def fetch_prices():
-    """Fetch real market prices from CoinGecko (primary price source)."""
+    """Fetch real market prices from Bybit REST API (single source of truth)."""
     global _last_price_fetch
     now = time.time()
     if now - _last_price_fetch < 15:
-        return  # use cache (15s interval)
+        return
 
+    # Bybit symbol → internal key
+    BYBIT_MAP = {
+        "BTCUSDT":  "BTC/USDT",
+        "ETHUSDT":  "ETH/USDT",
+        "MNTUSDT":  "MNT/USDT",
+        "METHUSDT": "mETH/USDT",
+        "COOKUSDT": "COOK/USDT",
+        "FBTCUSDT": "FBTC/USDT",
+        "WMNTUSDT": "WMNT/USDT",
+    }
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
-                "https://api.coingecko.com/api/v3/simple/price",
-                params={
-                    "ids": "bitcoin,ethereum,mantle,mantle-staked-ether,cook-finance",
-                    "vs_currencies": "usd",
-                    "include_24hr_change": "true",
-                },
+                "https://api.bybit.com/v5/market/tickers",
+                params={"category": "spot"},
             )
             if resp.status_code == 200:
-                data = resp.json()
-                mapping = {
-                    "BTC/USDT":  ("bitcoin",              105000.0),
-                    "ETH/USDT":  ("ethereum",             2500.0),
-                    "MNT/USDT":  ("mantle",               0.65),
-                    "mETH/USDT": ("mantle-staked-ether",  2658.0),
-                    "COOK/USDT": ("cook-finance",         0.0284),
-                }
-                for symbol, (cg_id, fallback) in mapping.items():
-                    coin = data.get(cg_id, {})
-                    price_cache[symbol]["price"] = coin.get("usd", fallback)
-                    price_cache[symbol]["change_24h"] = round(coin.get("usd_24h_change", 0.0), 2)
-                # FBTC tracks BTC, WMNT tracks MNT
-                price_cache["FBTC/USDT"]["price"] = price_cache["BTC/USDT"]["price"] * 0.9998
-                price_cache["FBTC/USDT"]["change_24h"] = price_cache["BTC/USDT"]["change_24h"]
-                price_cache["WMNT/USDT"]["price"] = price_cache["MNT/USDT"]["price"]
-                price_cache["WMNT/USDT"]["change_24h"] = price_cache["MNT/USDT"]["change_24h"]
+                tickers = {t["symbol"]: t for t in resp.json().get("result", {}).get("list", [])}
+                updated = []
+                for bybit_sym, internal_sym in BYBIT_MAP.items():
+                    t = tickers.get(bybit_sym)
+                    if not t:
+                        continue
+                    price  = float(t.get("lastPrice", 0) or 0)
+                    chg    = float(t.get("price24hPcnt", 0) or 0) * 100
+                    if price > 0:
+                        price_cache[internal_sym]["price"]     = price
+                        price_cache[internal_sym]["change_24h"] = round(chg, 2)
+                        updated.append(internal_sym)
                 _last_price_fetch = now
                 for sym in price_history:
                     p = price_cache[sym]["price"]
                     if p > 0:
                         price_history[sym] = (price_history[sym] + [p])[-50:]
                 print(
-                    f"[Market] BTC=${price_cache['BTC/USDT']['price']:,.2f} "
+                    f"[Market/Bybit] BTC=${price_cache['BTC/USDT']['price']:,.2f} "
                     f"ETH=${price_cache['ETH/USDT']['price']:,.2f} "
-                    f"MNT=${price_cache['MNT/USDT']['price']:.4f} "
-                    f"mETH=${price_cache['mETH/USDT']['price']:,.2f} "
-                    f"COOK=${price_cache['COOK/USDT']['price']:.5f}"
+                    f"MNT=${price_cache['MNT/USDT']['price']:.4f}"
                 )
             else:
-                print(f"[Market] CoinGecko returned {resp.status_code}, using cached prices.")
+                print(f"[Market] Bybit returned {resp.status_code}, using cached prices.")
     except Exception as e:
         print(f"[Market] Fetch error: {e} — using cached prices.")
 
