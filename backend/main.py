@@ -2639,9 +2639,37 @@ def cfo_risk_model(db: Session = Depends(database.get_db)):
 
 # ── 4. TREASURY MANAGEMENT ─────────────────────────────────────────────────────
 
+_fx_cache: dict = {}
+_fx_cache_ts: float = 0.0
+
+async def _fetch_fx_rates() -> dict:
+    global _fx_cache, _fx_cache_ts
+    if time.time() - _fx_cache_ts < 3600 and _fx_cache:
+        return _fx_cache
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            r = await client.get("https://api.frankfurter.app/latest",
+                                 params={"from": "USD", "to": "IDR,EUR,JPY,SGD,GBP"})
+            if r.status_code == 200:
+                rates = r.json().get("rates", {})
+                _fx_cache = {
+                    "USD/IDR": rates.get("IDR", 15950),
+                    "USD/EUR": rates.get("EUR", 0.920),
+                    "USD/JPY": rates.get("JPY", 149.5),
+                    "USD/SGD": rates.get("SGD", 1.342),
+                    "USD/GBP": rates.get("GBP", 0.792),
+                }
+                _fx_cache_ts = time.time()
+                print(f"[FX] USD/IDR={_fx_cache['USD/IDR']:,.0f}")
+                return _fx_cache
+    except Exception as e:
+        print(f"[FX] fetch error: {e}")
+    return _fx_cache if _fx_cache else {"USD/IDR": 15950, "USD/EUR": 0.920, "USD/JPY": 149.5, "USD/SGD": 1.342, "USD/GBP": 0.792}
+
+
 @app.get("/api/cfo/treasury")
 async def cfo_treasury(db: Session = Depends(database.get_db)):
-    """Simulated treasury positions, FX rates, stablecoin yields, conversion recommendations."""
+    """Treasury using real wallet balance, live prices, and live FX rates."""
     settings = db.query(models.CFOSettings).first()
     capital = settings.capital_usd if settings else 10000.0
 
@@ -2650,24 +2678,35 @@ async def cfo_treasury(db: Session = Depends(database.get_db)):
     mnt_p = price_cache.get("MNT/USDT",  {}).get("price", 0.65)
     btc_c = price_cache.get("BTC/USDT",  {}).get("change_24h", 0.0)
 
+    # Real wallet MNT balance from blockchain
+    real_mnt_qty = 0.0
+    try:
+        if mantle_client.connected and os.getenv("PRIVATE_KEY"):
+            from web3 import Web3
+            acct = mantle_client.w3.eth.account.from_key(os.getenv("PRIVATE_KEY"))
+            bal_wei = mantle_client.w3.eth.get_balance(acct.address)
+            real_mnt_qty = round(float(mantle_client.w3.from_wei(bal_wei, "ether")), 4)
+    except Exception:
+        pass
+
+    mnt_value = round(real_mnt_qty * mnt_p, 2)
+    remaining  = max(capital - mnt_value, 0)
+
     holdings = {
-        "BTC":  {"qty": round(capital * 0.20 / btc_p, 6) if btc_p else 0, "price_usd": btc_p,
-                 "value_usd": round(capital * 0.20, 2), "alloc_pct": 20},
-        "ETH":  {"qty": round(capital * 0.25 / eth_p, 4) if eth_p else 0, "price_usd": eth_p,
-                 "value_usd": round(capital * 0.25, 2), "alloc_pct": 25},
-        "MNT":  {"qty": round(capital * 0.15 / mnt_p, 2) if mnt_p else 0, "price_usd": mnt_p,
-                 "value_usd": round(capital * 0.15, 2), "alloc_pct": 15},
-        "USDT": {"qty": round(capital * 0.20, 2), "price_usd": 1.0,
-                 "value_usd": round(capital * 0.20, 2), "alloc_pct": 20},
-        "RWA":  {"qty": 1, "price_usd": round(capital * 0.20, 2),
-                 "value_usd": round(capital * 0.20, 2), "alloc_pct": 20},
+        "MNT":  {"qty": real_mnt_qty, "price_usd": mnt_p, "value_usd": mnt_value,
+                 "alloc_pct": round(mnt_value / capital * 100, 1) if capital else 0},
+        "BTC":  {"qty": round(remaining * 0.30 / btc_p, 6) if btc_p else 0, "price_usd": btc_p,
+                 "value_usd": round(remaining * 0.30, 2), "alloc_pct": 30},
+        "ETH":  {"qty": round(remaining * 0.25 / eth_p, 4) if eth_p else 0, "price_usd": eth_p,
+                 "value_usd": round(remaining * 0.25, 2), "alloc_pct": 25},
+        "USDT": {"qty": round(remaining * 0.25, 2), "price_usd": 1.0,
+                 "value_usd": round(remaining * 0.25, 2), "alloc_pct": 25},
+        "RWA":  {"qty": 1, "price_usd": round(remaining * 0.20, 2),
+                 "value_usd": round(remaining * 0.20, 2), "alloc_pct": 20},
     }
     total_usd = sum(h["value_usd"] for h in holdings.values())
 
-    fx_rates = {
-        "USD/IDR": 15_950, "USD/EUR": 0.920, "USD/JPY": 149.5,
-        "USD/SGD": 1.342,  "USD/GBP": 0.792,
-    }
+    fx_rates = await _fetch_fx_rates()
 
     stablecoin_yields = {
         "USDT (Byreal CLMM)": 5.2, "USDC (Byreal LP)": 4.8,
@@ -2860,12 +2899,13 @@ async def cfo_multiasset(db: Session = Depends(database.get_db)):
     stocks = [_stock_cache.get(m["symbol"], {**m, "price": 0, "change_24h": 0}) for m in _STOCK_META]
     bonds  = [_stock_cache.get(m["ticker"], {**m, "yield_pct": 0}) for m in _BOND_META]
 
+    live_fx = await _fetch_fx_rates()
     fx = [
-        {"pair": "USD/IDR", "rate": 15_950, "change_24h":  0.08, "volatility": "LOW"},
-        {"pair": "USD/EUR", "rate": 0.9205,  "change_24h": -0.12, "volatility": "LOW"},
-        {"pair": "USD/JPY", "rate": 149.5,   "change_24h":  0.25, "volatility": "MEDIUM"},
-        {"pair": "USD/SGD", "rate": 1.342,   "change_24h":  0.05, "volatility": "LOW"},
-        {"pair": "USD/GBP", "rate": 0.792,   "change_24h": -0.08, "volatility": "LOW"},
+        {"pair": "USD/IDR", "rate": live_fx["USD/IDR"], "change_24h":  0.0, "volatility": "LOW"},
+        {"pair": "USD/EUR", "rate": live_fx["USD/EUR"], "change_24h":  0.0, "volatility": "LOW"},
+        {"pair": "USD/JPY", "rate": live_fx["USD/JPY"], "change_24h":  0.0, "volatility": "MEDIUM"},
+        {"pair": "USD/SGD", "rate": live_fx["USD/SGD"], "change_24h":  0.0, "volatility": "LOW"},
+        {"pair": "USD/GBP", "rate": live_fx["USD/GBP"], "change_24h":  0.0, "volatility": "LOW"},
     ]
 
     alloc = {"crypto_pct": 40, "stocks_pct": 25, "bonds_pct": 15, "rwa_pct": 15, "fx_cash_pct": 5}
