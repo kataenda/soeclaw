@@ -192,9 +192,7 @@ function App() {
         <div className="panel topbar" style={{ padding: '0.85rem 1.25rem' }}>
           {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,232,122,0.1))', border: '1px solid rgba(0,212,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
-              🤖
-            </div>
+            <img src="/soeclaw_logo.png" alt="SoeClaw" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} />
             <div>
               <h1 className="mono-text text-cyan" style={{ fontSize: '1.15rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
                 SOECLAW <span style={{ color: '#a78bfa' }}>AI CFO</span> <span className="mono-text text-muted" style={{ fontSize: '0.68rem', fontWeight: 400 }}>v2.0</span>
