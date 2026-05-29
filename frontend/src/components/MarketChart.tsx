@@ -514,7 +514,13 @@ const CandlestickChart: React.FC<CandleProps> = ({
 
       ma5Ref.current?.setData(showMA ? toMA(calcMA(sorted, 5))  : []);
       ma20Ref.current?.setData(showMA ? toMA(calcMA(sorted, 20)) : []);
-      chartRef.current.timeScale().scrollToRealTime();
+
+      // Show only recent candles so price scale fits recent price action
+      const visibleBars: Record<string, number> = { '1m': 60, '5m': 60, '15m': 48, '1h': 48, '4h': 36, '1D': 30 };
+      const nBars = visibleBars[timeframe] ?? 48;
+      const total = sorted.length;
+      chartRef.current.timeScale().setVisibleLogicalRange({ from: total - nBars - 1, to: total });
+      chartRef.current.priceScale('right').applyOptions({ autoScale: true });
 
       // Snap only when using simulated data (no real Bybit candles)
       if (!hasRealData && currentPrice > 0 && lastCandleRef.current) {
