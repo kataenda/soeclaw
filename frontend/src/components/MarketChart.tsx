@@ -43,15 +43,9 @@ const BYBIT_INTERVAL: Record<Timeframe, string> = {
   '1D':  'D',
 };
 
-const TICKER_EXTRA = [
-  { sym: 'USDT',  price: 1.0000, chg:  0.01, color: '#26A17B' },
-  { sym: 'USDC',  price: 1.0001, chg:  0.00, color: '#2775CA' },
-  { sym: 'CLEO',  price: 0.0082, chg:  3.45, color: '#00D4FF' },
-  { sym: 'AUSD',  price: 0.9998, chg: -0.01, color: '#FFD700' },
-  { sym: 'USDe',  price: 1.0003, chg:  0.02, color: '#6366F1' },
-  { sym: 'KelpDAO', price: 1.041, chg: 1.12, color: '#22C55E' },
-  { sym: 'LEND',  price: 0.3241, chg: -0.87, color: '#FF6B6B' },
-  { sym: 'PENDLE',price: 4.120,  chg:  2.34, color: '#3B82F6' },
+const TICKER_STABLE = [
+  { sym: 'USDT', price: 1.0000, chg: 0.00 },
+  { sym: 'USDC', price: 1.0001, chg: 0.00 },
 ];
 
 const DRAW_TOOLS = [
@@ -329,7 +323,7 @@ const TickerMarquee: React.FC<{ prices: Prices }> = ({ prices }) => {
       price: prices[sym]?.price ?? 0,
       chg: prices[sym]?.change_24h ?? 0,
     })),
-    ...TICKER_EXTRA,
+    ...TICKER_STABLE,
   ];
 
   return (
@@ -585,14 +579,12 @@ const CandlestickChart: React.FC<CandleProps> = ({
   }, [currentPrice, selected]);
 
   const vol24h = useMemo(() => {
-    if (currentPrice <= 0) return '—';
-    const base = selected === 'BTC/USDT' || selected === 'FBTC/USDT' ? 28_000_000_000
-      : selected === 'ETH/USDT' ? 9_000_000_000
-      : selected === 'mETH/USDT' ? 850_000_000
-      : selected === 'COOK/USDT' ? 12_000_000
-      : 45_000_000;
-    return base >= 1e9 ? `$${(base/1e9).toFixed(2)}B` : `$${(base/1e6).toFixed(2)}M`;
-  }, [selected, currentPrice]);
+    if (bybitCandles.length === 0) return '—';
+    const totalVol = bybitCandles.slice(-24).reduce((s, c) => s + c.volume, 0);
+    const volUsd = totalVol * currentPrice;
+    if (volUsd <= 0) return '—';
+    return volUsd >= 1e9 ? `$${(volUsd/1e9).toFixed(2)}B` : volUsd >= 1e6 ? `$${(volUsd/1e6).toFixed(2)}M` : `$${(volUsd/1e3).toFixed(0)}K`;
+  }, [bybitCandles, currentPrice]);
 
   const symName = selected.replace('/USDT', '');
 
