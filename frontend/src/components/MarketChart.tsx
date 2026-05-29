@@ -579,12 +579,12 @@ const CandlestickChart: React.FC<CandleProps> = ({
   }, [currentPrice, selected]);
 
   const vol24h = useMemo(() => {
-    if (bybitCandles.length === 0) return '—';
-    const totalVol = bybitCandles.slice(-24).reduce((s, c) => s + c.volume, 0);
+    if (data.length === 0) return '—';
+    const totalVol = data.slice(-24).reduce((s, c) => s + c.volume, 0);
     const volUsd = totalVol * currentPrice;
     if (volUsd <= 0) return '—';
     return volUsd >= 1e9 ? `$${(volUsd/1e9).toFixed(2)}B` : volUsd >= 1e6 ? `$${(volUsd/1e6).toFixed(2)}M` : `$${(volUsd/1e3).toFixed(0)}K`;
-  }, [bybitCandles, currentPrice]);
+  }, [data, currentPrice]);
 
   const symName = selected.replace('/USDT', '');
 
