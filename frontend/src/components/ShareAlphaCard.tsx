@@ -232,39 +232,72 @@ export default function ShareAlphaCard({ onClose }: Props) {
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* Download JPG */}
+        <button
+          onClick={handleShareJpg}
+          disabled={sharing || !data}
+          style={{
+            width: '100%', padding: '0.65rem', borderRadius: 8,
+            border: '1px solid rgba(0,212,255,0.5)',
+            background: sharing ? 'rgba(0,212,255,0.04)' : 'rgba(0,212,255,0.12)',
+            color: '#00d4ff', fontSize: '0.68rem', fontWeight: 700,
+            cursor: sharing ? 'wait' : 'pointer', fontFamily: 'JetBrains Mono, monospace',
+            opacity: !data ? 0.5 : 1,
+          }}
+        >
+          {sharing ? '⏳ GENERATING…' : '📸 DOWNLOAD JPG (HD)'}
+        </button>
+
+        {/* Platform share buttons */}
+        {data && (() => {
+          const sg = (n: number) => n >= 0 ? '+' : '';
+          const text = encodeURIComponent(`🤖 SoeClaw AI CFO — Alpha vs BTC: ${sg(data.alpha_pct)}${data.alpha_pct.toFixed(2)}%\nWin Rate: ${data.win_rate.toFixed(1)}% · ${data.total_decisions} on-chain proofs · Mantle L2\n#MantleAIHackathon #ERC8004 #SoeClaw`);
+          const url  = encodeURIComponent('https://soeclaw.vercel.app');
+          const platforms = [
+            { name: 'WhatsApp',  color: '#25D366', bg: 'rgba(37,211,102,0.1)',  border: 'rgba(37,211,102,0.4)',  icon: '💬', href: `https://wa.me/?text=${text}%0A${url}` },
+            { name: 'Telegram',  color: '#2CA5E0', bg: 'rgba(44,165,224,0.1)',  border: 'rgba(44,165,224,0.4)',  icon: '✈️', href: `https://t.me/share/url?url=${url}&text=${text}` },
+            { name: 'X',         color: '#ffffff', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.2)', icon: '𝕏',  href: `https://twitter.com/intent/tweet?text=${text}&url=${url}` },
+            { name: 'Facebook',  color: '#1877F2', bg: 'rgba(24,119,242,0.1)',  border: 'rgba(24,119,242,0.4)',  icon: 'f',  href: `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}` },
+            { name: 'LinkedIn',  color: '#0A66C2', bg: 'rgba(10,102,194,0.1)',  border: 'rgba(10,102,194,0.4)',  icon: 'in', href: `https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}` },
+          ];
+          return (
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {platforms.map(p => (
+                <a key={p.name} href={p.href} target="_blank" rel="noopener noreferrer"
+                  title={`Share to ${p.name}`}
+                  style={{
+                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    gap: 3, padding: '0.5rem 0.3rem', borderRadius: 8,
+                    border: `1px solid ${p.border}`, background: p.bg,
+                    color: p.color, textDecoration: 'none',
+                    fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{p.icon}</span>
+                  <span style={{ fontSize: '0.48rem', opacity: 0.8 }}>{p.name}</span>
+                </a>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* Bottom row: copy + close */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={handleShareJpg}
-            disabled={sharing || !data}
-            style={{
-              flex: 1, padding: '0.6rem', borderRadius: 8, border: '1px solid rgba(0,212,255,0.5)',
-              background: sharing ? 'rgba(0,212,255,0.04)' : 'rgba(0,212,255,0.1)',
-              color: '#00d4ff', fontSize: '0.65rem', fontWeight: 700,
-              cursor: sharing ? 'wait' : 'pointer', fontFamily: 'JetBrains Mono, monospace',
-              opacity: !data ? 0.5 : 1,
-            }}
-          >
-            {sharing ? '⏳ GENERATING…' : '📸 SHARE JPG'}
-          </button>
-          <button
-            onClick={handleCopyText}
-            style={{
-              flex: 1, padding: '0.6rem', borderRadius: 8, border: '1px solid rgba(0,232,122,0.4)',
-              background: 'rgba(0,232,122,0.08)', color: '#00e87a', fontSize: '0.65rem', fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
-            }}
-          >
+          <button onClick={handleCopyText} style={{
+            flex: 1, padding: '0.5rem', borderRadius: 8,
+            border: '1px solid rgba(0,232,122,0.4)', background: 'rgba(0,232,122,0.08)',
+            color: '#00e87a', fontSize: '0.62rem', fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
+          }}>
             {copied ? '✓ COPIED!' : t('share_copy')}
           </button>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)',
-              background: 'transparent', color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem',
-              cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
-            }}
-          >
+          <button onClick={onClose} style={{
+            padding: '0.5rem 1rem', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
+            color: 'rgba(255,255,255,0.4)', fontSize: '0.62rem',
+            cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
+          }}>
             {t('share_close')}
           </button>
         </div>
