@@ -758,8 +758,8 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   const [history,      setHistory]      = useState<PricePoint[]>([]);
   const [timeframe,    setTimeframe]    = useState<Timeframe>('1h');
   const [seed,         setSeed]         = useState(0);
-  const [bybitCandles, setBybitCandles] = useState<OHLCPoint[]>([]);
-  const bybitLoadingRef = useRef(false);
+  const [bybitData, setBybitData] = useState<{ key: string; candles: OHLCPoint[] } | null>(null);
+  const bybitLoadingRef = useRef('');
   const latestPriceRef  = useRef<number>(0);
   const prevSelectedRef = useRef(selected);
   const prevTFRef       = useRef(timeframe);
@@ -792,10 +792,12 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   // Rebuild base candles when token changes
   useEffect(() => { setSeed(s => s + 1); }, [selected]);
 
-  // Fetch real OHLCV from Bybit; refresh every 60s for live updates
+  // Fetch real OHLCV from Bybit; track key so stale data from old symbol is ignored
   useEffect(() => {
     const sym      = selected.replace('/', '').toUpperCase();
     const interval = BYBIT_INTERVAL[timeframe];
+    const key      = `${selected}_${timeframe}`;
+    bybitLoadingRef.current = key;
     const load = () => {
       fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`)
         .then(r => r.json())
@@ -810,11 +812,10 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
             close:  parseFloat(row[4]),
             volume: parseFloat(row[5]),
           }));
-          setBybitCandles(rows);
+          setBybitData({ key, candles: rows });
         })
         .catch(() => {});
     };
-    bybitLoadingRef.current = true;
     load();
     const iv = setInterval(load, 60_000);
     return () => clearInterval(iv);
@@ -843,6 +844,9 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
 
   const realCandles = useMemo(() => generateCandles(history), [history]);
 
+  const currentKey   = `${selected}_${timeframe}`;
+  const bybitCandles = bybitData?.key === currentKey ? bybitData.candles : [];
+
   const candles = useMemo(() => {
     if (bybitCandles.length > 0) return bybitCandles.slice(-200);
     if (baseCandles.length > 0)  return baseCandles.slice(-200);
@@ -865,7 +869,7 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
         selected={selected}
         onSelected={setSelected}
         bybitConnected={bybitConnected}
-        hasRealData={bybitCandles.length > 0 || bybitLoadingRef.current}
+        hasRealData={bybitCandles.length > 0 || bybitLoadingRef.current === currentKey}
         formatPrice={formatPrice}
         timeframe={timeframe}
         onTimeframe={setTimeframe}
