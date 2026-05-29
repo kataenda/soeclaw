@@ -361,7 +361,6 @@ interface CandleProps {
   selected: string;
   onSelected: (s: string) => void;
   bybitConnected: boolean;
-  hasRealData: boolean;
   formatPrice: (p: number) => string;
   timeframe: Timeframe;
   onTimeframe: (tf: Timeframe) => void;
@@ -369,7 +368,7 @@ interface CandleProps {
 
 const CandlestickChart: React.FC<CandleProps> = ({
   data, currentPrice, change24h, prices, selected, onSelected,
-  bybitConnected, hasRealData, formatPrice, timeframe, onTimeframe,
+  bybitConnected, formatPrice, timeframe, onTimeframe,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef     = useRef<ReturnType<typeof createChart> | null>(null);
@@ -517,51 +516,8 @@ const CandlestickChart: React.FC<CandleProps> = ({
 
       chartRef.current.timeScale().fitContent();
       chartRef.current.priceScale('right').applyOptions({ autoScale: true });
-
-      // Snap only when using simulated data (no real Bybit candles)
-      if (!hasRealData && currentPrice > 0 && lastCandleRef.current) {
-        const snapLast = lastCandleRef.current;
-        const intSec   = TF_CONFIG[timeframe].interval * 60;
-        const snapTime = Math.floor(Date.now() / 1000 / intSec) * intSec;
-        const snapIsCur = snapTime === snapLast.time;
-        try {
-          if (isOHLC) {
-            candleRef.current.update({ time: snapTime, open: snapIsCur ? snapLast.open : currentPrice, high: snapIsCur ? Math.max(snapLast.high, currentPrice) : currentPrice, low: snapIsCur ? Math.min(snapLast.low, currentPrice) : currentPrice, close: currentPrice });
-          } else if (isSingle) {
-            candleRef.current.update({ time: snapTime, value: currentPrice });
-          }
-          lastCandleRef.current = { ...snapLast, time: snapTime, close: currentPrice, high: snapIsCur ? Math.max(snapLast.high, currentPrice) : currentPrice, low: snapIsCur ? Math.min(snapLast.low, currentPrice) : currentPrice };
-        } catch (_) {}
-      }
     } catch (_) {}
-  }, [data, chartStyle, showMA, hasRealData]);
-
-  // Live tick — skip when real Bybit data is available (avoids CoinGecko price mismatch spikes)
-  useEffect(() => {
-    if (!candleRef.current || !chartRef.current || currentPrice <= 0 || hasRealData) return;
-    try {
-      const last = lastCandleRef.current;
-      if (!last) return;
-      const isOHLC   = ['bars','candles','hollow','heikin_ashi'].includes(chartStyle);
-      const isSingle = ['line','area','baseline'].includes(chartStyle);
-      const intervalSec = TF_CONFIG[timeframe].interval * 60;
-      const now         = Math.floor(Date.now() / 1000);
-      const candleTime  = Math.floor(now / intervalSec) * intervalSec;
-      const isCur = candleTime === last.time;
-      const nextOpen  = isCur ? last.open  : currentPrice;
-      const nextHigh  = isCur ? Math.max(last.high, currentPrice) : currentPrice;
-      const nextLow   = isCur ? Math.min(last.low,  currentPrice) : currentPrice;
-      if (isOHLC) {
-        candleRef.current.update({ time: candleTime, open: nextOpen, high: nextHigh, low: nextLow, close: currentPrice });
-      } else if (isSingle) {
-        candleRef.current.update({ time: candleTime, value: currentPrice });
-      }
-      volumeRef.current?.update({ time: candleTime, value: last.volume, color: currentPrice >= nextOpen ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)' });
-      chartRef.current.timeScale().scrollToRealTime();
-      // Keep lastCandleRef current so next tick's isCur check stays accurate
-      lastCandleRef.current = { ...last, time: candleTime, open: nextOpen, high: nextHigh, low: nextLow, close: currentPrice };
-    } catch (_) {}
-  }, [currentPrice, timeframe, chartStyle]);
+  }, [data, chartStyle, showMA]);
 
   const ma5v  = useMemo(() => { const s=[...data].sort((a,b)=>a.time-b.time); const v=calcMA(s,5);  for(let i=v.length-1;i>=0;i--) if(v[i]!==null) return v[i] as number; return null; }, [data]);
   const ma20v = useMemo(() => { const s=[...data].sort((a,b)=>a.time-b.time); const v=calcMA(s,20); for(let i=v.length-1;i>=0;i--) if(v[i]!==null) return v[i] as number; return null; }, [data]);
@@ -754,50 +710,21 @@ const CandlestickChart: React.FC<CandleProps> = ({
 
 const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   useTranslation();
-  const [selected,     setSelected]     = useState<string>('BTC/USDT');
-  const [history,      setHistory]      = useState<PricePoint[]>([]);
-  const [timeframe,    setTimeframe]    = useState<Timeframe>('1h');
-  const [seed,         setSeed]         = useState(0);
+  const [selected,  setSelected]  = useState<string>('BTC/USDT');
+  const [timeframe, setTimeframe] = useState<Timeframe>('1h');
   const [bybitData, setBybitData] = useState<{ key: string; candles: OHLCPoint[] } | null>(null);
-  const bybitLoadingRef = useRef('');
-  const latestPriceRef  = useRef<number>(0);
-  const prevSelectedRef = useRef(selected);
-  const prevTFRef       = useRef(timeframe);
+  const [loading,   setLoading]   = useState(true);
 
   const info         = prices[selected] ?? { price: 0, change_24h: 0 };
   const currentPrice = info.price;
   const change24h    = info.change_24h;
 
-  useEffect(() => {
-    if (currentPrice <= 0) return;
-    latestPriceRef.current = currentPrice;
-    const ts = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-    if (prevSelectedRef.current !== selected) { prevSelectedRef.current = selected; setHistory([{ time: ts, price: currentPrice }]); }
-    else setHistory(prev => [...prev.slice(-49), { time: ts, price: currentPrice }]);
-  }, [currentPrice, selected]);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const p = latestPriceRef.current; if (p <= 0) return;
-      const ts = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      setHistory(prev => [...prev.slice(-49), { time: ts, price: p }]);
-    }, 5000);
-    return () => clearInterval(iv);
-  }, []);
-
-  useEffect(() => {
-    if (prevTFRef.current !== timeframe) { prevTFRef.current = timeframe; setSeed(s => s + 1); }
-  }, [timeframe]);
-
-  // Rebuild base candles when token changes
-  useEffect(() => { setSeed(s => s + 1); }, [selected]);
-
-  // Fetch real OHLCV from Bybit; track key so stale data from old symbol is ignored
+  // Fetch ONLY from Bybit — no simulated data
   useEffect(() => {
     const sym      = selected.replace('/', '').toUpperCase();
     const interval = BYBIT_INTERVAL[timeframe];
     const key      = `${selected}_${timeframe}`;
-    bybitLoadingRef.current = key;
+    setLoading(true);
     const load = () => {
       fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`)
         .then(r => r.json())
@@ -813,45 +740,17 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
             volume: parseFloat(row[5]),
           }));
           setBybitData({ key, candles: rows });
+          setLoading(false);
         })
-        .catch(() => {});
+        .catch(() => setLoading(false));
     };
     load();
     const iv = setInterval(load, 60_000);
     return () => clearInterval(iv);
   }, [selected, timeframe]);
 
-  // Trigger initial base build once real price arrives
-  const initRef = useRef(false);
-  useEffect(() => {
-    if (currentPrice > 0 && !initRef.current) { initRef.current = true; setSeed(s => s + 1); }
-  }, [currentPrice]);
-
-  // Auto-rebuild baseCandles every 5 min so they don't go stale
-  useEffect(() => {
-    const iv = setInterval(() => {
-      if (latestPriceRef.current > 0) setSeed(s => s + 1);
-    }, 5 * 60 * 1000);
-    return () => clearInterval(iv);
-  }, []);
-
-  // Stable historical base — frozen until timeframe changes (seed only increments on TF switch or init)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const baseCandles = useMemo(() => {
-    if (currentPrice <= 0) return [] as OHLCPoint[];
-    return buildCandleHistory(currentPrice, change24h, [], timeframe, 195);
-  }, [timeframe, seed]);
-
-  const realCandles = useMemo(() => generateCandles(history), [history]);
-
-  const currentKey   = `${selected}_${timeframe}`;
-  const bybitCandles = bybitData?.key === currentKey ? bybitData.candles : [];
-
-  const candles = useMemo(() => {
-    if (bybitCandles.length > 0) return bybitCandles.slice(-200);
-    if (baseCandles.length > 0)  return baseCandles.slice(-200);
-    return realCandles.slice(-200);
-  }, [bybitCandles, baseCandles, realCandles]);
+  const currentKey = `${selected}_${timeframe}`;
+  const candles    = bybitData?.key === currentKey ? bybitData.candles : [];
 
   const formatPrice = (p: number) => {
     if (p >= 1000) return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -860,7 +759,15 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   };
 
   return (
-    <div className="panel" style={{ flex: 2, minHeight: 0, padding: 0, overflow: 'hidden' }}>
+    <div className="panel" style={{ flex: 2, minHeight: 0, padding: 0, overflow: 'hidden', position: 'relative' }}>
+      {loading && candles.length === 0 && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b0e1a', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00d4ff', animation: 'pulse 1s infinite' }} />
+            <span style={{ fontSize: '0.7rem', color: '#4a5a7a', fontFamily: 'JetBrains Mono,monospace' }}>Loading chart…</span>
+          </div>
+        </div>
+      )}
       <CandlestickChart
         data={candles}
         currentPrice={currentPrice}
@@ -869,7 +776,6 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
         selected={selected}
         onSelected={setSelected}
         bybitConnected={bybitConnected}
-        hasRealData={bybitCandles.length > 0 || bybitLoadingRef.current === currentKey}
         formatPrice={formatPrice}
         timeframe={timeframe}
         onTimeframe={setTimeframe}
