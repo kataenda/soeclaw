@@ -516,9 +516,8 @@ const CandlestickChart: React.FC<CandleProps> = ({
       ma20Ref.current?.setData(showMA ? toMA(calcMA(sorted, 20)) : []);
       chartRef.current.timeScale().scrollToRealTime();
 
-      // Immediately snap price line to real price so it never shows a stale
-      // simulation close after setData (before the first live tick fires).
-      if (currentPrice > 0 && lastCandleRef.current) {
+      // Snap only when using simulated data (no real Bybit candles)
+      if (!hasRealData && currentPrice > 0 && lastCandleRef.current) {
         const snapLast = lastCandleRef.current;
         const intSec   = TF_CONFIG[timeframe].interval * 60;
         const snapTime = Math.floor(Date.now() / 1000 / intSec) * intSec;
@@ -533,7 +532,7 @@ const CandlestickChart: React.FC<CandleProps> = ({
         } catch (_) {}
       }
     } catch (_) {}
-  }, [data, chartStyle, showMA]);
+  }, [data, chartStyle, showMA, hasRealData]);
 
   // Live tick — skip when real Bybit data is available (avoids CoinGecko price mismatch spikes)
   useEffect(() => {
