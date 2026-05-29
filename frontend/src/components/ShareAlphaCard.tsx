@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import html2canvas from 'html2canvas';
 import { API_URL } from '../config';
 import { useTranslation } from '../i18n/TranslationContext';
 
@@ -29,6 +30,7 @@ export default function ShareAlphaCard({ onClose }: Props) {
   const { t } = useTranslation();
   const [data, setData] = useState<AlphaData | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +68,40 @@ export default function ShareAlphaCard({ onClose }: Props) {
     });
   };
 
+  const handleShareJpg = useCallback(async () => {
+    if (!cardRef.current || !data) return;
+    setSharing(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 3, useCORS: true, backgroundColor: '#0a0e1a', logging: false,
+      });
+      const captionH = 90;
+      const final = document.createElement('canvas');
+      final.width  = canvas.width;
+      final.height = canvas.height + captionH;
+      const ctx = final.getContext('2d')!;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.fillStyle = '#080c18';
+      ctx.fillRect(0, canvas.height, canvas.width, captionH);
+      ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width, canvas.height); ctx.stroke();
+      const sg = (n: number) => n >= 0 ? '+' : '';
+      ctx.textAlign = 'center';
+      ctx.font = `bold 22px Arial`;
+      ctx.fillStyle = data.alpha_pct >= 0 ? '#00e87a' : '#ff3366';
+      ctx.fillText(`SoeClaw AI CFO  ·  Alpha vs BTC: ${sg(data.alpha_pct)}${data.alpha_pct.toFixed(2)}%  ·  Win Rate: ${data.win_rate.toFixed(1)}%  ·  ${data.total_decisions} on-chain proofs`, final.width / 2, canvas.height + 32);
+      ctx.font = `16px Arial`;
+      ctx.fillStyle = 'rgba(167,139,250,0.85)';
+      ctx.fillText(`soeclaw.vercel.app  ·  Mantle L2  ·  ERC-8004  ·  #MantleAIHackathon  #SoeClaw`, final.width / 2, canvas.height + 62);
+      const link = document.createElement('a');
+      link.download = `soeclaw-alpha-${new Date().toISOString().slice(0, 10)}.jpg`;
+      link.href = final.toDataURL('image/jpeg', 0.95);
+      link.click();
+    } catch (e) { console.error('Share error:', e); }
+    setSharing(false);
+  }, [cardRef, data]);
+
   const sign = (n: number) => n >= 0 ? '+' : '';
   const alphaColor = data ? (data.alpha_pct > 0 ? '#00e87a' : data.alpha_pct < -1 ? '#ff3366' : '#f59e0b') : '#f59e0b';
 
@@ -95,7 +131,7 @@ export default function ShareAlphaCard({ onClose }: Props) {
           {/* Brand header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,232,122,0.15))', border: '1px solid rgba(0,212,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>🤖</div>
+              <img src="/soeclaw_logo.png" alt="SoeClaw" style={{ width: 32, height: 32, borderRadius: 7, objectFit: 'cover' }} />
               <div>
                 <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#00d4ff', letterSpacing: '-0.3px' }}>SOECLAW <span style={{ color: '#a78bfa' }}>AI CFO</span></div>
                 <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px', textTransform: 'uppercase' }}>Mantle L2 · ERC-8004</div>
@@ -169,14 +205,25 @@ export default function ShareAlphaCard({ onClose }: Props) {
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
+            onClick={handleShareJpg}
+            disabled={sharing || !data}
+            style={{
+              flex: 1, padding: '0.6rem', borderRadius: 8, border: '1px solid rgba(0,212,255,0.5)',
+              background: sharing ? 'rgba(0,212,255,0.04)' : 'rgba(0,212,255,0.1)',
+              color: '#00d4ff', fontSize: '0.65rem', fontWeight: 700,
+              cursor: sharing ? 'wait' : 'pointer', fontFamily: 'JetBrains Mono, monospace',
+              opacity: !data ? 0.5 : 1,
+            }}
+          >
+            {sharing ? '⏳ GENERATING…' : '📸 SHARE JPG'}
+          </button>
+          <button
             onClick={handleCopyText}
             style={{
               flex: 1, padding: '0.6rem', borderRadius: 8, border: '1px solid rgba(0,232,122,0.4)',
               background: 'rgba(0,232,122,0.08)', color: '#00e87a', fontSize: '0.65rem', fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace', transition: 'all 0.2s',
+              cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,232,122,0.16)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,232,122,0.08)'; }}
           >
             {copied ? '✓ COPIED!' : t('share_copy')}
           </button>
