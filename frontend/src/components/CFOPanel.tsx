@@ -11,9 +11,10 @@ interface Props {
   walletBalanceMnt?: number;
   walletGreeting?: string;
   onWalletConnect?: (addr: string, balance: number, greeting: string) => void;
+  agentRunning?: boolean;
 }
 
-export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '', onWalletConnect }: Props) {
+export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, walletGreeting = '', onWalletConnect, agentRunning = false }: Props) {
   const { t } = useTranslation();
   const [msgs,      setMsgs]      = useState<ChatMsg[]>([{ role: 'ai', text: t('cfo_welcome') }]);
   const [pendingTx, setPendingTx] = useState<TxData | null>(null);
@@ -138,8 +139,11 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
   const regime = health?.regime ?? 'NEUTRAL';
   const regimeColor = regime === 'RISK_OFF' ? '#ff3366' : regime === 'RISK_ON' ? '#00e87a' : '#f59e0b';
 
-  const QUICK = ['Start Trading', 'Stop Trading', t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4'), 'Alpha scorecard', 'Market status'];
+  const QUICK = [t('cfo_quick1'), t('cfo_quick2'), t('cfo_quick3'), t('cfo_quick4'), 'Alpha scorecard', 'Market status'];
   const BYREAL_QUICK = [
+    // ── Agent Control ──
+    'Start Trading',
+    'Stop Trading',
     // ── Discovery ──
     'Byreal help',
     'Catalog list',
@@ -219,6 +223,17 @@ export default function CFOPanel({ walletAddress = '', walletBalanceMnt = 0, wal
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          {/* Agent status badge */}
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: '0.55rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4,
+            background: agentRunning ? 'rgba(0,232,122,0.1)' : 'rgba(255,51,102,0.1)',
+            border: `1px solid ${agentRunning ? 'rgba(0,232,122,0.35)' : 'rgba(255,51,102,0.35)'}`,
+            color: agentRunning ? '#00e87a' : '#ff3366',
+          }}>
+            <div style={{ width: 4, height: 4, borderRadius: '50%', background: agentRunning ? '#00e87a' : '#ff3366', boxShadow: agentRunning ? '0 0 4px #00e87a' : 'none' }} />
+            {agentRunning ? t('agent_running') : t('agent_stopped')}
+          </span>
           {hScore !== null && (
             <span style={{ fontSize: '0.58rem', fontWeight: 700, color: hColor, background: `${hColor}15`, border: `1px solid ${hColor}33`, borderRadius: 4, padding: '1px 5px' }}>
               {hScore}/100
