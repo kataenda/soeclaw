@@ -763,6 +763,7 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   const [timeframe,    setTimeframe]    = useState<Timeframe>('1h');
   const [seed,         setSeed]         = useState(0);
   const [bybitCandles, setBybitCandles] = useState<OHLCPoint[]>([]);
+  const bybitLoadingRef = useRef(false);
   const latestPriceRef  = useRef<number>(0);
   const prevSelectedRef = useRef(selected);
   const prevTFRef       = useRef(timeframe);
@@ -817,7 +818,7 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
         })
         .catch(() => {});
     };
-    setBybitCandles([]);
+    bybitLoadingRef.current = true;
     load();
     const iv = setInterval(load, 60_000);
     return () => clearInterval(iv);
@@ -868,7 +869,7 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
         selected={selected}
         onSelected={setSelected}
         bybitConnected={bybitConnected}
-        hasRealData={bybitCandles.length > 0}
+        hasRealData={bybitCandles.length > 0 || bybitLoadingRef.current}
         formatPrice={formatPrice}
         timeframe={timeframe}
         onTimeframe={setTimeframe}
