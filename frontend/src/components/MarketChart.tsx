@@ -719,31 +719,46 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   const currentPrice = info.price;
   const change24h    = info.change_24h;
 
-  // Fetch ONLY from Bybit — no simulated data
+  // Fetch from Bybit — backend proxy first, direct Bybit API as fallback
   useEffect(() => {
     const sym      = selected.replace('/', '').toUpperCase();
     const interval = BYBIT_INTERVAL[timeframe];
     const key      = `${selected}_${timeframe}`;
     setLoading(true);
-    const load = () => {
-      fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`)
-        .then(r => r.json())
-        .then(d => {
-          if (d.retCode !== 0 || !d.result?.list?.length) return;
-          const rows: OHLCPoint[] = [...d.result.list].reverse().map((row: string[]) => ({
-            time:   Math.floor(Number(row[0]) / 1000),
-            label:  '',
-            open:   parseFloat(row[1]),
-            high:   parseFloat(row[2]),
-            low:    parseFloat(row[3]),
-            close:  parseFloat(row[4]),
-            volume: parseFloat(row[5]),
-          }));
-          setBybitData({ key, candles: rows });
+
+    const parseRows = (list: string[][]): OHLCPoint[] =>
+      [...list].reverse().map(row => ({
+        time:   Math.floor(Number(row[0]) / 1000),
+        label:  '',
+        open:   parseFloat(row[1]),
+        high:   parseFloat(row[2]),
+        low:    parseFloat(row[3]),
+        close:  parseFloat(row[4]),
+        volume: parseFloat(row[5]),
+      }));
+
+    const load = async () => {
+      try {
+        // Try backend proxy
+        const r = await fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`);
+        const d = await r.json();
+        if (d.retCode === 0 && d.result?.list?.length) {
+          setBybitData({ key, candles: parseRows(d.result.list) });
           setLoading(false);
-        })
-        .catch(() => setLoading(false));
+          return;
+        }
+      } catch (_) {}
+      try {
+        // Fallback: direct Bybit public API
+        const r = await fetch(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${sym}&interval=${interval}&limit=200`);
+        const d = await r.json();
+        if (d.retCode === 0 && d.result?.list?.length) {
+          setBybitData({ key, candles: parseRows(d.result.list) });
+          setLoading(false);
+        }
+      } catch (_) { setLoading(false); }
     };
+
     load();
     const iv = setInterval(load, 60_000);
     return () => clearInterval(iv);
