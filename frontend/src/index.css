@@ -294,28 +294,70 @@ body {
   .byreal-side-panel { display: none; }
 }
 
+/* ── Mobile (≤640px) ── */
 @media (max-width: 640px) {
-  body { overflow: hidden; }
+  html, body { overflow: hidden; height: 100%; }
+
   .dashboard-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr 240px auto;
-    padding: 0.5rem;
-    gap: 0.5rem;
-    padding-bottom: 0;
+    grid-template-rows: auto 1fr auto;
+    padding: 0;
+    gap: 0;
+    height: 100dvh;
+    height: 100vh;
   }
-  .topbar { grid-row: 1; }
+
+  .topbar {
+    grid-row: 1;
+    padding: 0.55rem 0.85rem !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    gap: 0.4rem;
+  }
+
+  /* Hide subtitle on mobile */
+  .topbar .sys-subtitle { display: none; }
+  /* Hide WS reconnect text on mobile */
+  .topbar .ws-badge span:last-child { display: none; }
+
   .sidebar-left,
   .main-content,
   .sidebar-right {
-    grid-column: 1; grid-row: 2;
-    display: none; overflow-y: auto;
+    grid-column: 1;
+    grid-row: 2;
+    display: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.65rem;
+    gap: 0.65rem;
+    border-radius: 0;
   }
   .sidebar-left.tab-active,
   .main-content.tab-active,
   .sidebar-right.tab-active { display: flex; }
-  .bottom-panel { grid-row: 3; grid-column: 1; }
-  .panel { padding: 0.85rem; }
-  .neon-btn { padding: 0.35rem 0.6rem; font-size: 0.7rem; }
+
+  .bottom-panel { display: none; }
+
+  .panel {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+
+  .neon-btn {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.68rem;
+  }
+
+  /* Make text readable on mobile */
+  .mono-text { font-size: 0.9em; }
+
+  /* CFO Panel full height */
+  .sidebar-right.tab-active {
+    flex-direction: column;
+    min-height: 0;
+  }
 }
 
 /* ── Mobile Nav ── */
@@ -324,24 +366,44 @@ body {
 @media (max-width: 640px) {
   .mobile-nav {
     display: flex;
-    grid-column: 1; grid-row: 4;
+    grid-row: 3;
+    grid-column: 1;
     border-top: 1px solid var(--border);
-    background: var(--bg-panel);
-    backdrop-filter: blur(12px);
+    background: rgba(8, 8, 16, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
   .mobile-nav button {
-    flex: 1; padding: 0.65rem 0.25rem;
-    background: transparent; border: none;
+    flex: 1;
+    padding: 0.6rem 0.2rem;
+    background: transparent;
+    border: none;
     color: var(--text-muted);
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.62rem; letter-spacing: 1px;
-    cursor: pointer; text-transform: uppercase;
-    display: flex; flex-direction: column;
-    align-items: center; gap: 3px;
-    transition: color 0.2s;
+    font-size: 0.58rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: color 0.2s, background 0.2s;
+    border-top: 2px solid transparent;
   }
-  .mobile-nav button.active { color: var(--cyan); }
-  .mobile-nav button span.nav-icon { font-size: 1rem; }
+
+  .mobile-nav button.active {
+    color: var(--cyan);
+    border-top-color: var(--cyan);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .mobile-nav button span.nav-icon { font-size: 1.2rem; }
 }
 
 /* ── Skeleton loader ── */

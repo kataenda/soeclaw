@@ -192,40 +192,40 @@ function App() {
         <div className="panel topbar" style={{ padding: '0.85rem 1.25rem' }}>
           {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <img src="/soeclaw_logo.png" alt="SoeClaw" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} />
+            <img src="/soeclaw_logo.png" alt="SoeClaw" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
             <div>
-              <h1 className="mono-text text-cyan" style={{ fontSize: '1.15rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
-                SOECLAW <span style={{ color: '#a78bfa' }}>AI CFO</span> <span className="mono-text text-muted" style={{ fontSize: '0.68rem', fontWeight: 400 }}>v2.0</span>
+              <h1 className="mono-text text-cyan" style={{ fontSize: '1.05rem', lineHeight: 1, letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>
+                SOECLAW <span style={{ color: '#a78bfa' }}>AI CFO</span> <span className="mono-text text-muted" style={{ fontSize: '0.62rem', fontWeight: 400 }}>v2.0</span>
               </h1>
-              <p className="mono-text text-muted" style={{ fontSize: '0.68rem', marginTop: '2px' }}>{t('sys_subtitle')}</p>
+              <p className="mono-text text-muted sys-subtitle" style={{ fontSize: '0.62rem', marginTop: '2px' }}>{t('sys_subtitle')}</p>
             </div>
           </div>
 
           {/* Status + controls */}
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             {/* System online */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'rgba(0,232,122,0.08)', border: '1px solid rgba(0,232,122,0.2)', borderRadius: '20px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green-glow)' }} />
-              <span className="mono-text" style={{ fontSize: '0.68rem', color: 'var(--green)' }}>{t('sys_online')}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.55rem', background: 'rgba(0,232,122,0.08)', border: '1px solid rgba(0,232,122,0.2)', borderRadius: '20px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green-glow)', flexShrink: 0 }} />
+              <span className="mono-text" style={{ fontSize: '0.65rem', color: 'var(--green)', whiteSpace: 'nowrap' }}>{t('sys_online')}</span>
             </div>
 
             {/* WS status */}
             {!wsConnected && (
-              <div role="status" aria-live="polite" aria-label="WebSocket reconnecting" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.3)', borderRadius: '20px' }}>
-                <div aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff9900', animation: 'pulse 1s infinite' }} />
-                <span className="mono-text" style={{ fontSize: '0.68rem', color: '#ff9900' }}>WS RECONNECTING</span>
+              <div className="ws-badge" role="status" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.55rem', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.3)', borderRadius: '20px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff9900', animation: 'pulse 1s infinite', flexShrink: 0 }} />
+                <span className="mono-text" style={{ fontSize: '0.65rem', color: '#ff9900', whiteSpace: 'nowrap' }}>WS</span>
               </div>
             )}
 
             {/* Agent toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: agentRunning ? 'rgba(0,232,122,0.08)' : 'rgba(255,51,102,0.08)', border: `1px solid ${agentRunning ? 'rgba(0,232,122,0.2)' : 'rgba(255,51,102,0.25)'}`, borderRadius: '20px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: agentRunning ? 'var(--green)' : 'var(--pink)', boxShadow: `0 0 6px ${agentRunning ? 'var(--green-glow)' : 'var(--pink-glow)'}` }} />
-              <span className="mono-text" style={{ fontSize: '0.68rem', color: agentRunning ? 'var(--green)' : 'var(--pink)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.55rem', background: agentRunning ? 'rgba(0,232,122,0.08)' : 'rgba(255,51,102,0.08)', border: `1px solid ${agentRunning ? 'rgba(0,232,122,0.2)' : 'rgba(255,51,102,0.25)'}`, borderRadius: '20px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: agentRunning ? 'var(--green)' : 'var(--pink)', boxShadow: `0 0 6px ${agentRunning ? 'var(--green-glow)' : 'var(--pink-glow)'}`, flexShrink: 0 }} />
+              <span className="mono-text" style={{ fontSize: '0.65rem', color: agentRunning ? 'var(--green)' : 'var(--pink)', whiteSpace: 'nowrap' }}>
                 {agentRunning ? t('agent_running') : t('agent_stopped')}
               </span>
               <button onClick={toggleAgent} className="neon-btn"
                 aria-label={agentRunning ? 'Stop AI agents' : 'Start AI agents'}
-                style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderColor: agentRunning ? 'rgba(255,51,102,0.5)' : 'rgba(0,232,122,0.5)', color: agentRunning ? 'var(--pink)' : 'var(--green)', background: 'transparent' }}>
+                style={{ fontSize: '0.62rem', padding: '0.12rem 0.45rem', borderColor: agentRunning ? 'rgba(255,51,102,0.5)' : 'rgba(0,232,122,0.5)', color: agentRunning ? 'var(--pink)' : 'var(--green)', background: 'transparent', whiteSpace: 'nowrap' }}>
                 {agentRunning ? t('btn_stop') : t('btn_start')}
               </button>
             </div>
@@ -235,7 +235,7 @@ function App() {
               className="neon-btn"
               onClick={() => setShowFinancial(true)}
               aria-label="Open AI CFO Financial Dashboard"
-              style={{ fontSize: '0.68rem', borderColor: 'rgba(167,139,250,0.5)', color: '#a78bfa', fontWeight: 700 }}
+              style={{ fontSize: '0.65rem', borderColor: 'rgba(167,139,250,0.5)', color: '#a78bfa', fontWeight: 700, whiteSpace: 'nowrap' }}
             >
               CFO Dashboard
             </button>
