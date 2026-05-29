@@ -115,7 +115,7 @@ export default function AlphaScorecard() {
           {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}%
         </div>
         <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 3 }}>
-          Mantle L2 · ERC-8004 · {data.verified_onchain} {t('as_onchain_proofs')}
+          Mantle L2 · ERC-8004 · {data.verified_onchain} {data.verified_onchain === 1 ? 'on-chain proof' : 'on-chain proofs'}
         </div>
       </div>
 
@@ -156,28 +156,35 @@ export default function AlphaScorecard() {
       </div>
 
       {/* ── Agent Leaderboard ── */}
-      {agents.length > 0 && (
-        <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5, padding: '0.35rem 0.4rem' }}>
-          <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', marginBottom: '0.35rem', textTransform: 'uppercase' }}>{t('as_agent_perf')}</div>
-          {agents.map((a, i) => {
-            const barPct = (Math.abs(a.pnl_usd) / maxAgentPnl) * 100;
-            const c = a.pnl_usd >= 0 ? '#00e87a' : '#ff3366';
-            const medal = ['🥇', '🥈', '🥉'][i] ?? '  ';
-            return (
-              <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                <span style={{ fontSize: '0.6rem', minWidth: 16 }}>{medal}</span>
-                <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)', minWidth: 88, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
-                <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                  <div style={{ height: '100%', width: `${barPct}%`, background: c, borderRadius: 2, transition: 'width 0.5s' }} />
-                </div>
-                <span style={{ fontSize: '0.58rem', fontWeight: 700, color: c, minWidth: 46, textAlign: 'right' }}>
-                  {a.pnl_usd >= 0 ? '+' : ''}${Math.abs(a.pnl_usd).toFixed(0)}
-                </span>
+      <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5, padding: '0.35rem 0.4rem' }}>
+        <div style={{ fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.5px', marginBottom: '0.35rem', textTransform: 'uppercase' }}>{t('as_agent_perf')}</div>
+        {agents.length > 0 ? agents.map((a, i) => {
+          const barPct = maxAgentPnl > 0 ? (Math.abs(a.pnl_usd) / maxAgentPnl) * 100 : 0;
+          const c = a.pnl_usd > 0 ? '#00e87a' : a.pnl_usd < 0 ? '#ff3366' : '#6b7fa3';
+          const medal = ['🥇', '🥈', '🥉'][i] ?? '  ';
+          return (
+            <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+              <span style={{ fontSize: '0.6rem', minWidth: 16 }}>{medal}</span>
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)', minWidth: 88, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+              <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                <div style={{ height: '100%', width: `${barPct}%`, background: c, borderRadius: 2, transition: 'width 0.5s' }} />
               </div>
-            );
-          })}
-        </div>
-      )}
+              <span style={{ fontSize: '0.58rem', fontWeight: 700, color: c, minWidth: 46, textAlign: 'right' }}>
+                {a.pnl_usd >= 0 ? '+' : ''}${Math.abs(a.pnl_usd).toFixed(0)}
+              </span>
+            </div>
+          );
+        }) : (
+          ['AlphaQuant', 'WhaleWatcher', 'MacroAnalyzer', 'RiskManager'].map((name, i) => (
+            <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+              <span style={{ fontSize: '0.6rem', minWidth: 16 }}>{['🥇', '🥈', '🥉', '  '][i]}</span>
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)', minWidth: 88 }}>{name}</span>
+              <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }} />
+              <span style={{ fontSize: '0.58rem', color: '#6b7fa3', minWidth: 46, textAlign: 'right' }}>$0</span>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* ── On-chain Proof Link ── */}
       <a

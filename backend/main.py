@@ -2362,13 +2362,11 @@ def cfo_alpha_scorecard(db: Session = Depends(database.get_db)):
     else:
         sharpe = 0.0
 
-    # Per-agent breakdown (map DB agent_id → AGENT_CONFIGS)
+    # Per-agent breakdown — always include all 4 agents
     agents_list = []
     for cfg in AGENT_CONFIGS:
         ag_db = db.query(models.Agent).filter(models.Agent.name == cfg["name"]).first()
-        if not ag_db:
-            continue
-        s = agent_acc.get(ag_db.id, {"pnl": 0.0, "trades": 0, "wins": 0})
+        s = agent_acc.get(ag_db.id, {"pnl": 0.0, "trades": 0, "wins": 0}) if ag_db else {"pnl": 0.0, "trades": 0, "wins": 0}
         wr = round(s["wins"] / s["trades"] * 100, 1) if s["trades"] else 0.0
         agents_list.append({
             "name": cfg["name"],
