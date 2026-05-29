@@ -361,6 +361,7 @@ interface CandleProps {
   selected: string;
   onSelected: (s: string) => void;
   bybitConnected: boolean;
+  hasRealData: boolean;
   formatPrice: (p: number) => string;
   timeframe: Timeframe;
   onTimeframe: (tf: Timeframe) => void;
@@ -368,7 +369,7 @@ interface CandleProps {
 
 const CandlestickChart: React.FC<CandleProps> = ({
   data, currentPrice, change24h, prices, selected, onSelected,
-  bybitConnected, formatPrice, timeframe, onTimeframe,
+  bybitConnected, hasRealData, formatPrice, timeframe, onTimeframe,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef     = useRef<ReturnType<typeof createChart> | null>(null);
@@ -534,9 +535,9 @@ const CandlestickChart: React.FC<CandleProps> = ({
     } catch (_) {}
   }, [data, chartStyle, showMA]);
 
-  // Live tick — only update the last (current) candle, no full redraw
+  // Live tick — skip when real Bybit data is available (avoids CoinGecko price mismatch spikes)
   useEffect(() => {
-    if (!candleRef.current || !chartRef.current || currentPrice <= 0) return;
+    if (!candleRef.current || !chartRef.current || currentPrice <= 0 || hasRealData) return;
     try {
       const last = lastCandleRef.current;
       if (!last) return;
@@ -789,27 +790,32 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
   // Rebuild base candles when token changes
   useEffect(() => { setSeed(s => s + 1); }, [selected]);
 
-  // Fetch real OHLCV from Bybit public API; fall back to simulated if unavailable
+  // Fetch real OHLCV from Bybit; refresh every 60s for live updates
   useEffect(() => {
     const sym      = selected.replace('/', '').toUpperCase();
     const interval = BYBIT_INTERVAL[timeframe];
+    const load = () => {
+      fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.retCode !== 0 || !d.result?.list?.length) return;
+          const rows: OHLCPoint[] = [...d.result.list].reverse().map((row: string[]) => ({
+            time:   Math.floor(Number(row[0]) / 1000),
+            label:  '',
+            open:   parseFloat(row[1]),
+            high:   parseFloat(row[2]),
+            low:    parseFloat(row[3]),
+            close:  parseFloat(row[4]),
+            volume: parseFloat(row[5]),
+          }));
+          setBybitCandles(rows);
+        })
+        .catch(() => {});
+    };
     setBybitCandles([]);
-    fetch(`${API_URL}/api/kline?symbol=${sym}&interval=${interval}&limit=200`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.retCode !== 0 || !d.result?.list?.length) return;
-        const rows: OHLCPoint[] = [...d.result.list].reverse().map((row: string[]) => ({
-          time:   Math.floor(Number(row[0]) / 1000),
-          label:  '',
-          open:   parseFloat(row[1]),
-          high:   parseFloat(row[2]),
-          low:    parseFloat(row[3]),
-          close:  parseFloat(row[4]),
-          volume: parseFloat(row[5]),
-        }));
-        setBybitCandles(rows);
-      })
-      .catch(() => {});
+    load();
+    const iv = setInterval(load, 60_000);
+    return () => clearInterval(iv);
   }, [selected, timeframe]);
 
   // Trigger initial base build once real price arrives
@@ -857,6 +863,7 @@ const MarketChart: React.FC<Props> = ({ prices, bybitConnected = false }) => {
         selected={selected}
         onSelected={setSelected}
         bybitConnected={bybitConnected}
+        hasRealData={bybitCandles.length > 0}
         formatPrice={formatPrice}
         timeframe={timeframe}
         onTimeframe={setTimeframe}
