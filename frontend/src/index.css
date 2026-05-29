@@ -296,68 +296,87 @@ body {
 
 /* ── Mobile (≤640px) ── */
 @media (max-width: 640px) {
-  html, body { overflow: hidden; height: 100%; }
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    height: 100dvh;
+  }
 
   .dashboard-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr 58px;
     padding: 0;
     gap: 0;
-    height: 100dvh;
     height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
+  /* Header */
   .topbar {
+    grid-column: 1;
     grid-row: 1;
-    padding: 0.55rem 0.85rem !important;
+    padding: 0.5rem 0.75rem !important;
     border-radius: 0 !important;
     border-left: none !important;
     border-right: none !important;
     border-top: none !important;
     gap: 0.4rem;
+    flex-wrap: wrap;
+    min-height: 0;
   }
+  .sys-subtitle { display: none !important; }
 
-  /* Hide subtitle on mobile */
-  .topbar .sys-subtitle { display: none; }
-  /* Hide WS reconnect text on mobile */
-  .topbar .ws-badge span:last-child { display: none; }
-
+  /* Content panels — all in row 2, only tab-active visible */
   .sidebar-left,
   .main-content,
   .sidebar-right {
     grid-column: 1;
     grid-row: 2;
-    display: none;
+    display: none !important;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0.65rem;
-    gap: 0.65rem;
-    border-radius: 0;
+    padding: 0.6rem;
+    gap: 0.6rem;
   }
   .sidebar-left.tab-active,
   .main-content.tab-active,
-  .sidebar-right.tab-active { display: flex; }
+  .sidebar-right.tab-active {
+    display: flex !important;
+  }
 
-  .bottom-panel { display: none; }
+  /* Hide desktop-only panels */
+  .bottom-panel { display: none !important; }
+
+  /* Chart area: fill the row */
+  .main-content.tab-active {
+    flex-direction: column;
+  }
+  .main-content.tab-active > div {
+    flex-direction: column;
+    height: 100%;
+  }
 
   .panel {
-    padding: 0.75rem;
+    padding: 0.7rem;
     border-radius: 8px;
   }
 
   .neon-btn {
-    padding: 0.3rem 0.55rem;
-    font-size: 0.68rem;
+    padding: 0.28rem 0.5rem;
+    font-size: 0.65rem;
   }
 
-  /* Make text readable on mobile */
-  .mono-text { font-size: 0.9em; }
-
-  /* CFO Panel full height */
-  .sidebar-right.tab-active {
-    flex-direction: column;
-    min-height: 0;
+  /* Mobile nav row */
+  .mobile-nav {
+    grid-column: 1;
+    grid-row: 3;
   }
+}
+
+/* Desktop-only elements hidden on mobile */
+@media (max-width: 640px) {
+  .desktop-only { display: none !important; }
 }
 
 /* ── Mobile Nav ── */
@@ -366,44 +385,43 @@ body {
 @media (max-width: 640px) {
   .mobile-nav {
     display: flex;
-    grid-row: 3;
-    grid-column: 1;
     border-top: 1px solid var(--border);
-    background: rgba(8, 8, 16, 0.97);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    position: sticky;
-    bottom: 0;
+    background: rgba(5, 5, 12, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     z-index: 100;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    height: 58px;
+    align-items: stretch;
   }
 
   .mobile-nav button {
     flex: 1;
-    padding: 0.6rem 0.2rem;
+    padding: 0.5rem 0.2rem;
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    border-top: 2px solid transparent;
+    color: var(--text-dim);
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.58rem;
-    letter-spacing: 0.5px;
+    font-size: 0.56rem;
+    letter-spacing: 0.3px;
     cursor: pointer;
     text-transform: uppercase;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    transition: color 0.2s, background 0.2s;
-    border-top: 2px solid transparent;
+    justify-content: center;
+    gap: 2px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
 
   .mobile-nav button.active {
     color: var(--cyan);
     border-top-color: var(--cyan);
-    background: rgba(0,212,255,0.05);
+    background: rgba(0,212,255,0.04);
   }
 
-  .mobile-nav button span.nav-icon { font-size: 1.2rem; }
+  .mobile-nav button span.nav-icon { font-size: 1.1rem; line-height: 1; }
 }
 
 /* ── Skeleton loader ── */

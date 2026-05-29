@@ -232,7 +232,7 @@ function App() {
 
             <LanguageSwitcher />
             <button
-              className="neon-btn"
+              className="neon-btn desktop-only"
               onClick={() => setShowFinancial(true)}
               aria-label="Open AI CFO Financial Dashboard"
               style={{ fontSize: '0.65rem', borderColor: 'rgba(167,139,250,0.5)', color: '#a78bfa', fontWeight: 700, whiteSpace: 'nowrap' }}
@@ -240,15 +240,15 @@ function App() {
               CFO Dashboard
             </button>
             <button
-              className="neon-btn"
+              className="neon-btn desktop-only"
               onClick={() => setShowShareCard(true)}
               aria-label="Share Alpha Card"
               style={{ fontSize: '0.68rem', borderColor: 'rgba(0,232,122,0.5)', color: '#00e87a', fontWeight: 700 }}
             >
               Share Alpha
             </button>
-            <span className="mono-text text-muted" style={{ fontSize: '0.72rem' }}>// {username}</span>
-            <button className="neon-btn" onClick={handleLogout} aria-label="Log out" style={{ fontSize: '0.7rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
+            <span className="mono-text text-muted desktop-only" style={{ fontSize: '0.72rem' }}>// {username}</span>
+            <button className="neon-btn" onClick={handleLogout} aria-label="Log out" style={{ fontSize: '0.65rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
           </div>
         </div>
 
@@ -296,8 +296,8 @@ function App() {
           />
         </div>
 
-        {/* Bottom Panel — AI Thought Stream + SOECLAW Insights + Live Positions */}
-        <div style={{ gridColumn: '1 / 3', display: 'flex', gap: '0.85rem', overflow: 'hidden', minHeight: 0 }}>
+        {/* Bottom Panel — hidden on mobile */}
+        <div className="bottom-panel" style={{ gridColumn: '1 / 3', gap: '0.85rem', overflow: 'hidden', minHeight: 0, display: 'flex' }}>
           <div style={{ width: '268px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             <TerminalConsole thoughts={thoughts} />
           </div>
