@@ -68,39 +68,69 @@ export default function ShareAlphaCard({ onClose }: Props) {
     });
   };
 
+  const buildCanvas = useCallback(async () => {
+    if (!cardRef.current || !data) return null;
+    const canvas = await html2canvas(cardRef.current, {
+      scale: 3, useCORS: true, backgroundColor: '#0a0e1a', logging: false,
+    });
+    const captionH = 90;
+    const final = document.createElement('canvas');
+    final.width  = canvas.width;
+    final.height = canvas.height + captionH;
+    const ctx = final.getContext('2d')!;
+    ctx.drawImage(canvas, 0, 0);
+    ctx.fillStyle = '#080c18';
+    ctx.fillRect(0, canvas.height, canvas.width, captionH);
+    ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width, canvas.height); ctx.stroke();
+    const sg = (n: number) => n >= 0 ? '+' : '';
+    ctx.textAlign = 'center';
+    ctx.font = `bold 22px Arial`;
+    ctx.fillStyle = data.alpha_pct >= 0 ? '#00e87a' : '#ff3366';
+    ctx.fillText(`SoeClaw AI CFO · Alpha vs BTC: ${sg(data.alpha_pct)}${data.alpha_pct.toFixed(2)}% · Win Rate: ${data.win_rate.toFixed(1)}% · ${data.total_decisions} on-chain proofs`, final.width / 2, canvas.height + 32);
+    ctx.font = `16px Arial`;
+    ctx.fillStyle = 'rgba(167,139,250,0.85)';
+    ctx.fillText(`soeclaw.vercel.app · Mantle L2 · ERC-8004 · #MantleAIHackathon #SoeClaw`, final.width / 2, canvas.height + 62);
+    return final;
+  }, [cardRef, data]);
+
   const handleShareJpg = useCallback(async () => {
-    if (!cardRef.current || !data) return;
+    if (!data) return;
     setSharing(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3, useCORS: true, backgroundColor: '#0a0e1a', logging: false,
-      });
-      const captionH = 90;
-      const final = document.createElement('canvas');
-      final.width  = canvas.width;
-      final.height = canvas.height + captionH;
-      const ctx = final.getContext('2d')!;
-      ctx.drawImage(canvas, 0, 0);
-      ctx.fillStyle = '#080c18';
-      ctx.fillRect(0, canvas.height, canvas.width, captionH);
-      ctx.strokeStyle = 'rgba(0,212,255,0.3)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width, canvas.height); ctx.stroke();
+      const final = await buildCanvas();
+      if (!final) return;
       const sg = (n: number) => n >= 0 ? '+' : '';
-      ctx.textAlign = 'center';
-      ctx.font = `bold 22px Arial`;
-      ctx.fillStyle = data.alpha_pct >= 0 ? '#00e87a' : '#ff3366';
-      ctx.fillText(`SoeClaw AI CFO  ·  Alpha vs BTC: ${sg(data.alpha_pct)}${data.alpha_pct.toFixed(2)}%  ·  Win Rate: ${data.win_rate.toFixed(1)}%  ·  ${data.total_decisions} on-chain proofs`, final.width / 2, canvas.height + 32);
-      ctx.font = `16px Arial`;
-      ctx.fillStyle = 'rgba(167,139,250,0.85)';
-      ctx.fillText(`soeclaw.vercel.app  ·  Mantle L2  ·  ERC-8004  ·  #MantleAIHackathon  #SoeClaw`, final.width / 2, canvas.height + 62);
-      const link = document.createElement('a');
-      link.download = `soeclaw-alpha-${new Date().toISOString().slice(0, 10)}.jpg`;
-      link.href = final.toDataURL('image/jpeg', 0.95);
-      link.click();
-    } catch (e) { console.error('Share error:', e); }
+      const caption = `🤖 SoeClaw AI CFO — Alpha vs BTC: ${sg(data.alpha_pct)}${data.alpha_pct.toFixed(2)}%\nWin Rate: ${data.win_rate.toFixed(1)}% · ${data.total_decisions} on-chain proofs · Mantle L2\n\nsoeclaw.vercel.app\n#MantleAIHackathon #ERC8004 #SoeClaw`;
+      const filename = `soeclaw-alpha-${new Date().toISOString().slice(0, 10)}.jpg`;
+
+      // Convert canvas to Blob
+      const blob = await new Promise<Blob>((res) =>
+        final.toBlob((b) => res(b!), 'image/jpeg', 0.95)
+      );
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+
+      // Try Web Share API (mobile: shows WA, IG, Telegram, X, etc.)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files:  [file],
+          title:  'SoeClaw AI CFO — Alpha Report',
+          text:   caption,
+        });
+      } else {
+        // Desktop fallback: download the file
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') console.error('Share error:', e);
+    }
     setSharing(false);
-  }, [cardRef, data]);
+  }, [data, buildCanvas]);
 
   const sign = (n: number) => n >= 0 ? '+' : '';
   const alphaColor = data ? (data.alpha_pct > 0 ? '#00e87a' : data.alpha_pct < -1 ? '#ff3366' : '#f59e0b') : '#f59e0b';
