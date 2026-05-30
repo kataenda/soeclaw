@@ -182,6 +182,25 @@ BYBIT_SYMBOL_MAP = {
 
 _bybit_connected = False
 
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
+
+async def send_telegram(text: str):
+    """Send notification to user's Telegram via bot."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        async with httpx.AsyncClient(timeout=8) as client:
+            await client.post(url, json={
+                "chat_id": TELEGRAM_CHAT_ID,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            })
+    except Exception:
+        pass
+
 
 async def oracle_loop():
     """
@@ -2027,6 +2046,19 @@ async def agent_loop():
                         tx_hash=tx_hash,
                     )
                     db.add(trade)
+                    # Telegram notification
+                    emoji = "🟢" if action == "BUY" else "🔴"
+                    explorer_link = f"https://explorer.mantle.xyz/tx/{tx_hash}" if tx_hash else ""
+                    tg_msg = (
+                        f"{emoji} <b>SoeClaw AI CFO</b>\n"
+                        f"Agent: <b>{agent_cfg['name']}</b>\n"
+                        f"Signal: <b>{action} {symbol}</b>\n"
+                        f"Price: <b>${price:,.2f}</b>\n"
+                        f"Confidence: <b>{confidence:.0%}</b>\n"
+                        f"ERC-8004: ✅ On-chain proof\n"
+                        + (f"Explorer: {explorer_link}" if explorer_link else "")
+                    )
+                    await send_telegram(tg_msg)
                     db.commit()
 
                     explorer_url = f"{EXPLORER_BASE}/tx/{tx_hash}" if _valid_tx(tx_hash) else None
