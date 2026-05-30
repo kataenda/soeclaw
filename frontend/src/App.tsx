@@ -156,15 +156,12 @@ function App() {
     await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8000'}${endpoint}`, { method: 'POST' });
   };
 
-  const handleLogin = (tk: string, u: string) => { setToken(tk); setUsername(u); };
   const handleLogout = () => {
     localStorage.removeItem('sc_token');
     localStorage.removeItem('sc_user');
     setToken(null);
     setUsername('');
   };
-
-  if (!token) return <LoginPage onLogin={handleLogin} />;
 
   return (
     <>
@@ -247,8 +244,6 @@ function App() {
             >
               Share Alpha
             </button>
-            <span className="mono-text text-muted desktop-only" style={{ fontSize: '0.72rem' }}>// {username}</span>
-            <button className="neon-btn" onClick={handleLogout} aria-label="Log out" style={{ fontSize: '0.65rem', borderColor: 'rgba(255,51,102,0.4)', color: 'var(--pink)' }}>{t('btn_logout')}</button>
           </div>
         </div>
 
