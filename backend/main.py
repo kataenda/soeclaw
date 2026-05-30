@@ -3334,13 +3334,12 @@ async def cfo_chat(req: CFOChatRequest, db: Session = Depends(database.get_db)):
                                      "my balance", "byreal wallet"]):
         try:
             # Show Mantle wallet balance from blockchain
+            _pk = os.getenv("PRIVATE_KEY", "")
             mnt_price = price_cache.get("MNT/USDT", {}).get("price", 0.65)
-            btc_price = price_cache.get("BTC/USDT", {}).get("price", 0)
-            eth_price = price_cache.get("ETH/USDT", {}).get("price", 0)
             mnt_bal = 0.0
             wallet_addr = ""
-            if mantle_client.connected and PRIVATE_KEY:
-                account = mantle_client.w3.eth.account.from_key(PRIVATE_KEY)
+            if mantle_client.connected and _pk:
+                account = mantle_client.w3.eth.account.from_key(_pk)
                 wallet_addr = account.address
                 mnt_bal = mantle_client.w3.from_wei(
                     mantle_client.w3.eth.get_balance(account.address), "ether"
